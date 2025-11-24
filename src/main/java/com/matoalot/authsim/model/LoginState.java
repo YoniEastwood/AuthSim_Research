@@ -1,0 +1,11 @@
+package com.matoalot.authsim.model;
+
+public enum LoginState {
+    SUCCESS,
+    FAILURE_USER_NOT_FOUND,
+    FAILURE_INVALID_PASSWORD,
+    FAILURE_ACCOUNT_LOCKED,
+    FAILURE_TOTP_REQUIRED,
+    FAILURE_TOTP_INVALID,
+    FAILURE_REQUIRE_CAPTCHA
+}

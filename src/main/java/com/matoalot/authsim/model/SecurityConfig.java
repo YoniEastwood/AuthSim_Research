@@ -6,7 +6,7 @@ package com.matoalot.authsim.model;
 public class SecurityConfig {
     public String experimentId; // Unique identifier for the experiment
     public String description; // Description of the experiment
-    public String hashAlgorithm; // Hashing algorithm used.
+    public HashAlgorithm hashAlgorithm; // Hashing algorithm used.
     public boolean isSaltEnabled; // Flag for salt usage.
     public boolean isPepperEnabled; // Flag for pepper usage.
     public boolean isTOTPEnabled; // Flag for TOTP usage.
