@@ -10,29 +10,38 @@ import java.io.InputStream;
 import java.util.List;
 import java.lang.reflect.Type;
 
+/**
+ * Utility class to load security configurations from a JSON file.
+ */
 public class ConfigLoader {
 
+    /**
+     * Loads security configurations from a JSON file located in resource folder.
+     * @param fileName The name of the JSON file.
+     * @return A list of SecurityConfig objects.
+     */
     public static List<SecurityConfig> loadConfigs(String fileName) {
-        // Use ClassLoader to find the file in src/main/resources
+
+        // Get the file as an InputStream.
         InputStream inputStream = ConfigLoader.class.getClassLoader().getResourceAsStream(fileName);
 
+        // If the file is not found, throw an exception.
         if (inputStream == null) {
-            System.err.println("File not found: " + fileName);
-            return null;
+            throw new IllegalArgumentException("Config file not found: " + fileName);
         }
 
+        // Create a reader for the InputStream and parse JSON.
         try (Reader reader = new InputStreamReader(inputStream)) {
             Gson gson = new Gson();
 
-            // Define the type: List of SecurityConfig
+
             Type listType = new TypeToken<List<SecurityConfig>>(){}.getType();
 
             // Convert JSON to Java Objects
             return gson.fromJson(reader, listType);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Failed to load configurations from file: " + fileName, e);
         }
     }
 }

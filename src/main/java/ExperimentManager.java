@@ -15,9 +15,11 @@ public class ExperimentManager {
     public static final int ACCOUNTS_WITH_MEDIUM_PASSWORD = 10; // Number of medium accounts in each experiment.
     public static final int ACCOUNTS_WITH_HARD_PASSWORD = 10; // Number of hard accounts in each experiment.
     public static final int GROUP_SEED = ***REMOVED*** ^ 99999999; // TODO: Sara, enter you ID here.
-    private static final Random random = new Random();
+
 
     public static void main(String[] args) {
+        Random random = new Random(GROUP_SEED); // Seeded random for reproducibility.
+
         System.out.println("---Starting Experiment Manager---\n");
 
         System.out.println("Loading configurations...");
@@ -74,7 +76,7 @@ public class ExperimentManager {
 
 
     // Helper class for generating passwords of varying complexity.
-    private class PasswordGenerator {
+    private static class PasswordGenerator {
         private static final List<String> COMMON_PASSWORDS_LIST = new ArrayList<>(); // Cache for common passwords.
 
         static{loadCommonPasswords();} // Static block to load common passwords once.
@@ -82,10 +84,8 @@ public class ExperimentManager {
 
         // Load common passwords from CSV file in resources.
         public static void loadCommonPasswords() {
-            try {
-                // Get the top common password file as an InputStream from the resource folder.
-                InputStream inputStream = ExperimentManager.class.getClassLoader()
-                        .getResourceAsStream("1000-most-common-passwords.csv");
+            try (InputStream inputStream = ExperimentManager.class.getClassLoader()
+                        .getResourceAsStream("1000-most-common-passwords.csv")) {
 
                 // If the file is not found, throw an exception.
                 if (inputStream == null) {
@@ -104,9 +104,8 @@ public class ExperimentManager {
                     COMMON_PASSWORDS_LIST.add(password); // Add to the list.
                 }
 
-            } catch (Exception e) {
-                System.err.println("Failed to load common passwords: " + e.getMessage());
-                e.printStackTrace();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to load common passwords from CSV file.", e);
             }
         }
 
