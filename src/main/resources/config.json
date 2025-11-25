@@ -2,8 +2,7 @@
   {
     "experimentId": 0,
     "description": "This is just a test experiment configuration",
-    "hashAlgorithm": "None",
-    "isSaltEnabled": false,
+    "hashAlgorithm": "BCrypt",
     "isPepperEnabled": false,
     "isCaptchaEnabled": true,
     "isTOTPEnabled": false
@@ -11,7 +10,6 @@
     "experimentId": 1,
     "description": "This is another test experiment configuration with more security features",
     "hashAlgorithm": "SHA-256",
-    "isSaltEnabled": true,
     "isPepperEnabled": true,
     "isCaptchaEnabled": false,
     "isTOTPEnabled": true
