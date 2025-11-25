@@ -7,7 +7,6 @@ public class SecurityConfig {
     public String experimentId; // Unique identifier for the experiment
     public String description; // Description of the experiment
     public HashAlgorithm hashAlgorithm; // Hashing algorithm used.
-    public boolean isSaltEnabled; // Flag for salt usage.
     public boolean isPepperEnabled; // Flag for pepper usage.
     public boolean isTOTPEnabled; // Flag for TOTP usage.
 
@@ -21,7 +20,6 @@ public class SecurityConfig {
     public String toString() {
         return "Exp #" + experimentId + ": " + description +
                "\n  Hash Algorithm: " + hashAlgorithm +
-               "\n  Salt Enabled: " + isSaltEnabled +
                "\n  Pepper Enabled: " + isPepperEnabled +
                "\n  TOTP Enabled: " + isTOTPEnabled + "\n";
     }
