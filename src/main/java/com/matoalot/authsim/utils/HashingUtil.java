@@ -5,6 +5,10 @@ import de.mkammerer.argon2.Argon2Factory;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
+
+/**
+ * Utility class for hashing and verifying passwords using SHA-256, BCrypt, and Argon2id.
+ */
 public class HashingUtil {
     // BCrypt parameters.
     private static final int COST_FACTOR = 12; // BCrypt cost factor.
@@ -88,8 +92,12 @@ public class HashingUtil {
     }
 
 
+    /**
+     * Generate a salt value using BCrypt package.
+     * @return Random salt.
+     */
     public static String generateSalt() {
         // Generate a random salt using BCrypt's gensalt method.
-        return BCrypt.gensalt(); // TODO: check this out.
+        return BCrypt.gensalt();
     }
 }

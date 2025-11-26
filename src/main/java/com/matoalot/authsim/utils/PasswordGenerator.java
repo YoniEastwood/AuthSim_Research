@@ -9,12 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+
+/**
+ * Password Generator util.
+ */
 public class PasswordGenerator {
 
 
     private static final List<String> COMMON_PASSWORDS_LIST = new ArrayList<>(); // Cache for common passwords.
 
-    static{loadCommonPasswords();} // Static block to load common passwords once.
+    static{loadCommonPasswords();} // Static block to load common passwords from file once.
 
 
     // Load common passwords from CSV file in resources.
@@ -69,7 +73,7 @@ public class PasswordGenerator {
         // Password of length 8.
         String chars = "abcdefghijklmnopqrstuvwxyz0123456789!";
         StringBuilder password = new StringBuilder();
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 8; i++) {
             password.append(chars.charAt(random.nextInt(chars.length())));
         }
 

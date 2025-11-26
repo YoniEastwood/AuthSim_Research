@@ -2,9 +2,7 @@ import com.matoalot.authsim.model.SecurityConfig;
 import com.matoalot.authsim.server.Server;
 import com.matoalot.authsim.utils.ConfigLoader;
 import com.matoalot.authsim.utils.PasswordGenerator;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
+
 
 import java.io.*;
 import java.util.ArrayList;
