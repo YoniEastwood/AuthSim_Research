@@ -26,6 +26,14 @@ public class HashingUtil {
      * @return The SHA-256 hashed password.
      */
     public static String hashWithSHA256(String password, String salt) {
+        // Check arguments
+        if( password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot hash password: Password is blank.");
+        }
+        if( salt == null || salt.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot hash password: salt is blank.");
+        }
+
         return DigestUtils.sha256Hex(password + salt);
     }
 
@@ -37,6 +45,17 @@ public class HashingUtil {
      * @return True if the password matches the hash, false otherwise.
      */
     public static boolean verifySHA256(String password, String salt, String expectedHash) {
+        // Check arguments
+        if( password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot verify password: Password is blank.");
+        }
+        if( salt == null || salt.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot verify password: salt is blank.");
+        }
+        if( expectedHash == null) {
+            throw new IllegalArgumentException("Error: unable to varify password, expectedHash value is null");
+        }
+
         String computedHash = hashWithSHA256(password, salt);
         return computedHash.equals(expectedHash);
     }
@@ -47,6 +66,11 @@ public class HashingUtil {
      * @return The BCrypt hashed password.
      */
     public static String hashWithBCrypt(String password) {
+        // Check arguments.
+        if( password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot hash password: Password is blank or null.");
+        }
+
         // Generate a salt with default cost factor.
         String salt = BCrypt.gensalt(COST_FACTOR);
 
@@ -61,6 +85,14 @@ public class HashingUtil {
      * @return True if the password matches the hash, false otherwise.
      */
     public static boolean verifyBCrypt(String password, String expectedHash) {
+        // Check arguments
+        if( password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot verify password: Password is blank.");
+        }
+        if( expectedHash == null) {
+            throw new IllegalArgumentException("Error: unable to varify password, expected hash value is null");
+        }
+
         return BCrypt.checkpw(password, expectedHash);
     }
 
@@ -70,6 +102,11 @@ public class HashingUtil {
      * @return The Argon2id hashed password.
      */
     public static String hashWithArgon2id(String password) {
+        // Check arguments.
+        if( password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot hash password: Password is blank or null.");
+        }
+
         // Create an Argon2 instance for Argon2id.
         Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
 
@@ -84,6 +121,15 @@ public class HashingUtil {
      * @return True if the password matches the hash, false otherwise.
      */
     public static boolean verifyArgon2id(String password, String expectedHash) {
+        // Check arguments
+        if( password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Error: Cannot verify password: Password is blank.");
+        }
+        if( expectedHash == null) {
+            throw new IllegalArgumentException("Error: unable to varify password, expected hash value is null");
+        }
+
+
         // Create an Argon2 instance for Argon2id.
         Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
 
