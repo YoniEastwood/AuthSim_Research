@@ -5,7 +5,7 @@ import com.matoalot.authsim.utils.HashingUtil;
 import com.matoalot.authsim.utils.TOTPUtil;
 
 
-public class AuthService {
+class AuthService {
 
 
     /**
