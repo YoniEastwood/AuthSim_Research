@@ -28,6 +28,14 @@ public class TOTPUtil {
      * @return true if the code is valid, false otherwise.
      */
     public static boolean verify(String secret, String codeFromUser) {
+        // Test arguments.
+        if (secret == null || secret.isBlank()){
+            throw new IllegalArgumentException("Cannot verify TOTP: Secrete is null or empty.");
+        }
+        if (codeFromUser == null || codeFromUser.isBlank()){
+            return false;
+        }
+
 
         // Set up the verifier and time.
         TimeProvider timeProvider = new SystemTimeProvider();
@@ -48,6 +56,11 @@ public class TOTPUtil {
      * @return The current code.
      */
     public static String generateCurrentCode(String secret) {
+        // Test argument.
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("Cannot generate code: Secrete is null or empty.");
+        }
+
         try {
             TimeProvider timeProvider = new SystemTimeProvider();
             DefaultCodeGenerator codeGenerator = new DefaultCodeGenerator();

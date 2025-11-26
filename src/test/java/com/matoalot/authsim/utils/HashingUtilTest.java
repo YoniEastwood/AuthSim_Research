@@ -32,7 +32,7 @@ public class HashingUtilTest {
     @ParameterizedTest(name = "Password: {0}, salt: {1}, wrong password: {2}")
     @CsvSource({
             "password123,salt123, password",
-            "helloWorld,randomSalt, ",
+            "helloWorld,randomSalt, 7",
             "P@ssw0rd!,S@ltValue,nothing",
             "123456,abcdef,aeui",
             "complexPassword!@#,123!@#,134"
@@ -59,7 +59,7 @@ public class HashingUtilTest {
     @ParameterizedTest(name = "Password: {0}, wrong password: {1}")
     @CsvSource({
             "password123, password",
-            "helloWorld, ",
+            "helloWorld, 5",
             "P@ssw0rd!,nothing",
             "123456,wrongPassword",
             "complexPassword!@#,123!@#,134"
@@ -87,7 +87,7 @@ public class HashingUtilTest {
     @ParameterizedTest(name = "Password: {0}, wrong password: {1}")
     @CsvSource({
             "password123, password",
-            "helloWorld, ",
+            "helloWorld, a",
             "P@ssw0rd!,nothing",
             "123456,wrongPassword",
             "complexPassword!@#,123!@#,134"

@@ -7,6 +7,7 @@ import org.apache.commons.csv.CSVRecord;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 
@@ -51,6 +52,7 @@ public class PasswordGenerator {
 
     // Return a random common password.
     public static String getEasyPassword(Random random) {
+        Objects.requireNonNull(random, "Random generator cannot be null");
         // Return a random common password.
         int index = random.nextInt(COMMON_PASSWORDS_LIST.size());
         return COMMON_PASSWORDS_LIST.get(index);
@@ -58,6 +60,7 @@ public class PasswordGenerator {
 
     // Return a medium complexity password.
     public static String getMediumPassword(Random random) {
+        Objects.requireNonNull(random, "Random generator cannot be null");
         // Password of length 6.
         String chars = "abcdefghijklmnopqrstuvwxyz";
         StringBuilder password = new StringBuilder();
@@ -70,6 +73,8 @@ public class PasswordGenerator {
 
     // Return a hard complexity password.
     public static String getHardPassword(Random random) {
+        Objects.requireNonNull(random, "Random generator cannot be null");
+
         // Password of length 8.
         String chars = "abcdefghijklmnopqrstuvwxyz0123456789!";
         StringBuilder password = new StringBuilder();
