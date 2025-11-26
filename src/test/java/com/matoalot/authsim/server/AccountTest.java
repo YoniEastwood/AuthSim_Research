@@ -122,6 +122,7 @@ public class AccountTest {
 
         // Assert that lock cannot be overwritten
         time = time.minus(Duration.ofMinutes(10));
+        a1.lockAccountUntil(time);
         assertTrue(a1.isAccountLocked(), "Account should not allow overwriting timeUntilUnlock with a shorter time");
 
     }
