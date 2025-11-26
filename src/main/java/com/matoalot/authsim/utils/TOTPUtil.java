@@ -57,8 +57,7 @@ public class TOTPUtil {
 
             return codeGenerator.generate(secret, currentBucket);
         } catch (CodeGenerationException e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Error: unable to generate code. ", e);
         }
     }
 
