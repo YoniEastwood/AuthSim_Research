@@ -1,18 +1,19 @@
+package com.matoalot.authsim;
+
 import com.matoalot.authsim.model.SecurityConfig;
 import com.matoalot.authsim.server.Server;
 import com.matoalot.authsim.utils.ConfigLoader;
 import com.matoalot.authsim.utils.PasswordGenerator;
 
 
-import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class ExperimentManager {
-    public static final int ACCOUNTS_WITH_EASY_PASSWORD = 10; // Number of easy accounts in each experiment.
-    public static final int ACCOUNTS_WITH_MEDIUM_PASSWORD = 10; // Number of medium accounts in each experiment.
-    public static final int ACCOUNTS_WITH_HARD_PASSWORD = 10; // Number of hard accounts in each experiment.
+    private static final int ACCOUNTS_WITH_EASY_PASSWORD = 10; // Number of easy accounts in each experiment.
+    private static final int ACCOUNTS_WITH_MEDIUM_PASSWORD = 10; // Number of medium accounts in each experiment.
+    private static final int ACCOUNTS_WITH_HARD_PASSWORD = 10; // Number of hard accounts in each experiment.
+
     public static final int GROUP_SEED = ***REMOVED*** ^ 99999999; // TODO: Sara, enter you ID here.
 
 
@@ -43,7 +44,8 @@ public class ExperimentManager {
             // Create server with specified configuration.
             Server experimentServer = new Server(
                     config.hashAlgorithm,
-                    config.isPepperEnabled
+                    config.isPepperEnabled,
+                    config.attemptsUntilCAPTCHA
             );
 
             for(int i = 1; i <= ACCOUNTS_WITH_EASY_PASSWORD; i++) {
@@ -72,4 +74,4 @@ public class ExperimentManager {
 
     } // End of main method.
 
-} // End of ExperimentManager class.
+} // End of com.matoalot.authsim.ExperimentManager class.

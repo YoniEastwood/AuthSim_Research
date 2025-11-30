@@ -11,16 +11,17 @@ class AuthService {
     /**
      * Creates a new account with the specified parameters.
      * @param username The username for the account.
-     * @param password Passord for the account.
+     * @param password Password for the account.
      * @param enableTOTP Flag indicating if TOTP is enabled.
      * @param hashAlgorithm The hashing algorithm to use.
      * @return The created Account object.
      */
     static Account createAccount(
         String username, String password, boolean enableTOTP, HashAlgorithm hashAlgorithm) {
+        // TODO: test arguments again for code robustness. Better to Create a helper Class for testing.
 
         String hashedPassword; // Hashed password to be computed.
-        String salt = null; // Salt value if used.
+        String salt = null; // If using manual salt.
 
 
         switch (hashAlgorithm) {
@@ -41,19 +42,19 @@ class AuthService {
         }
 
         // Build the account.
-        Account.AccountBuilder account = new Account.AccountBuilder(username, hashedPassword);
+        Account.AccountBuilder accountBuilder = new Account.AccountBuilder(username, hashedPassword);
 
         // If using SHA-256, set the salt manually.
         if (hashAlgorithm == HashAlgorithm.SHA256) {
-            account = account.useSaltManually(salt);
+            accountBuilder = accountBuilder.useSaltManually(salt);
         }
 
         // If TOTP is enabled, generate and set the TOTP secret.
         if (enableTOTP) {
-            account.enableTOTP(TOTPUtil.generateSecret());
+            accountBuilder.enableTOTP(TOTPUtil.generateSecret());
         }
 
-        return account.build(); // Return the created account.
+        return accountBuilder.build(); // Return the created account.
     }
 
 
@@ -65,41 +66,53 @@ class AuthService {
      * @return True if authentication is successful, false otherwise.
      */
     static boolean authenticatePassword(Account account, String passwordAttempt, HashAlgorithm hashAlgorithm) {
+        // Validate arguments
+        if (account == null) {
+            throw new IllegalArgumentException("Account is null");
+        }
+        if (passwordAttempt == null) {
+            throw new IllegalArgumentException("Password is null");
+        }
 
+        // This is an internal method. This shouldn't be called if account is locked.
+        if (account.isAccountLocked()) {
+            throw new IllegalStateException("Trying to authenticate while account is locked.");
+        }
+
+
+        boolean correctPassword = false;
         switch (hashAlgorithm) {
             case SHA256:
+                // Should never happen. SHA-256 always uses salt.
                 if(!account.isUsingSaltManually()) {
                     throw new IllegalStateException("Account should always use manual salt for SHA-256.");
                 }
                 String salt = account.getManualSalt();
-                return HashingUtil.verifySHA256(passwordAttempt, salt,  account.getPasswordHash());
+                correctPassword = HashingUtil.verifySHA256(passwordAttempt, salt,  account.getPasswordHash());
+                break;
 
             case BCRYPT:
-                return HashingUtil.verifyBCrypt(passwordAttempt, account.getPasswordHash());
+                correctPassword = HashingUtil.verifyBCrypt(passwordAttempt, account.getPasswordHash());
+                break;
 
             case ARGON2ID:
-                return HashingUtil.verifyArgon2id(passwordAttempt, account.getPasswordHash());
+                correctPassword = HashingUtil.verifyArgon2id(passwordAttempt, account.getPasswordHash());
+                break;
 
             default:
                 throw new IllegalArgumentException("Unsupported hash algorithm: " + hashAlgorithm);
         }
-    }
 
-    static boolean authenticateTOTP(Account account, String totpAttempt) {
-        if (!account.isUsingTOTP()) { // TODO: check already by account.getSecretTOTP()
-            throw new IllegalStateException("Account is not using TOTP.");
+        // Handle the login attempt counter.
+        if (correctPassword) {
+            account.resetAttemptLoginCounter();
+        }
+        else {
+            account.badLoginAttemptsIncreaser();
         }
 
-        return TOTPUtil.verify(account.getSecretTOTP(), totpAttempt);
+        return correctPassword;
     }
-
-
-
-
-
-
-
-
 
 
 
