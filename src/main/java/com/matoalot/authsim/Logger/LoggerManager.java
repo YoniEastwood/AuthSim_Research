@@ -15,6 +15,9 @@ public class LoggerManager {
      */
     public static void addLog(LogEntry log) {
         attemptLogs.add(log);
+
+        // Debug print.
+        System.out.println("Log added: " + log.timestamp + " | " + log.username + " | " + log.guess + " | " + log.result);
     }
 
     /**
