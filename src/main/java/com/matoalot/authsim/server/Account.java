@@ -9,7 +9,7 @@ import java.time.Instant;
 class Account {
     private final String username; // Unique username of the account.
     private final String passwordHash; // Hashed password of the account.
-    private int failedLoginAttempts; // Counter for failed login attempts since last success.
+    private int failedLoginAttempts = 0; // Counter for failed login attempts since last success.
 
     private final String manualSalt; // Salt value. ONLY IF HASHING ALGORITHM DOESN'T HANDLE SALT INTERNALLY.
     private boolean isUsingSaltManually; // Flag indicating if salt is used.
@@ -39,6 +39,31 @@ class Account {
             this.isUsingSaltManually = false;
         }
     }
+
+    /**
+     * Resets the login attempts
+     */
+    void resetAttemptLoginCounter() {
+        // Check if account is locked.
+        if (isAccountLocked()) {
+            throw new IllegalArgumentException("Trying to reset and login attempts while account locked is forbitten");
+        }
+        // Reset the login attempts.
+        failedLoginAttempts = 0;
+    }
+
+    /**
+     * Increase the failed login counter by one.
+     */
+    void badLoginAttemptsIncreaser() {
+        failedLoginAttempts += 1;
+    }
+
+    /**
+     * Get the failed login attempts counter.
+     * @return failed logins since last success login.
+     */
+    int getBadLoginAttemptsCounter() {return failedLoginAttempts;}
 
     /**
      * Enables TOTP for the account with the provided secret.

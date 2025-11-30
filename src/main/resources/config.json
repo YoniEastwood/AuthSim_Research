@@ -3,6 +3,7 @@
     "experimentId": 0,
     "description": "This is just a test experiment configuration",
     "hashAlgorithm": "BCrypt",
+    "attemptsUntilCAPTCHA": 3,
     "isPepperEnabled": false,
     "isCaptchaEnabled": true,
     "isTOTPEnabled": false
@@ -10,7 +11,8 @@
     "experimentId": 1,
     "description": "This is another test experiment configuration with more security features",
     "hashAlgorithm": "SHA-256",
-    "isPepperEnabled": true,
+  "attemptsUntilCAPTCHA": 0,
+  "isPepperEnabled": true,
     "isCaptchaEnabled": false,
     "isTOTPEnabled": true
 }

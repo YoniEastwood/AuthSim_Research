@@ -9,6 +9,7 @@ public class SecurityConfig {
     public HashAlgorithm hashAlgorithm; // Hashing algorithm used.
     public boolean isPepperEnabled; // Flag for pepper usage.
     public boolean isTOTPEnabled; // Flag for TOTP usage.
+    public int attemptsUntilCAPTCHA;
 
     public SecurityConfig() {}
 
