@@ -2,6 +2,7 @@ package com.matoalot.authsim.server;
 import com.matoalot.authsim.ExperimentManager;
 import com.matoalot.authsim.Logger.LogEntry;
 import com.matoalot.authsim.Logger.LoggerManager;
+import com.matoalot.authsim.model.CaptchaState;
 import com.matoalot.authsim.model.HashAlgorithm;
 import com.matoalot.authsim.model.LoginState;
 
@@ -18,6 +19,7 @@ import com.matoalot.authsim.utils.TOTPUtil;
 public class Server {
     private final HashMap<String, Account> accounts; // List of user accounts.
     private final HashMap<String, TotpSession> pendingTOTPAccounts; // Accounts pending TOTP verification.
+    private final HashMap<String, CaptchaSession> pendingCaptchaAccounts; // Accounts pending CAPTCHA verification.
     private final HashAlgorithm hashAlgorithm; // Password hashing algorithm.
 
     private final boolean isPepperEnabled; // Flag indicating if pepper is used.
@@ -25,8 +27,9 @@ public class Server {
 
     private final int attemptsUntilCAPTCHA; // 0 means system will not throw CAPTCHA.
 
-    private static final int TOTP_TRIES_UNTIL_SESSION_LOCK = 3; // Lock account for 1 TOTP session after this amount of TOTP tries.
-
+    private static final int ACCOUNT_LOCK_THRESHOLD = 5; // Lock account after this many bad login attempts.
+    private static final int LOCK_TIME_MINUTES = 5; // Lock time in minutes after reaching bad login attempts threshold.
+    private final int TOTP_TRIES_UNTIL_SESSION_LOCK = 3; // Lock account for 1 TOTP session after this amount of TOTP tries.
     private static final long CAPTCHA_LATENCY_MS = 50; // Simulate CAPTCHA time to authenticate.
 
 
@@ -43,6 +46,7 @@ public class Server {
 
         this.accounts = new HashMap<>();
         this.pendingTOTPAccounts = new HashMap<>();
+        this.pendingCaptchaAccounts = new HashMap<>();
         this.hashAlgorithm = hashAlgorithm;
         this.isPepperEnabled = isPepperEnabled;
     }
@@ -73,14 +77,14 @@ public class Server {
         }
 
 
-        // Password validation.
+        // Password structure validation.
         if (password.length() < 4 || password.length() > 20) {
             return RegisterState.FAILURE_INVALID_LENGTH;
         }
 
+
         // If pepper is being used add it.
         password = addPepperIfUsed(password);
-
 
         // Create the account using AuthService.
         Account newAccount = AuthService.createAccount(
@@ -100,13 +104,14 @@ public class Server {
      * @return Log in state.
      */
     public LoginState login(String username, String password) {
-        Instant instant = Instant.now();
-        long startTime = System.currentTimeMillis();
-        LoginState state = LoginState.FAILURE_UNKNOWN;
+        Instant instant = Instant.now(); // Timestamp of the attempt.
+        long startTime = System.currentTimeMillis(); // Start time for latency calculation.
+        LoginState state = LoginState.FAILURE_UNKNOWN; // Default state.
         int attemptNumber = 0;
 
         try {
-            if (username == null || password == null) {
+            if (username == null || password == null ||
+                username.isBlank() || password.isBlank()) {
                 state = LoginState.FAILURE_BAD_CREDENTIALS;
                 return state;
             }
@@ -115,29 +120,32 @@ public class Server {
             username = username.strip();
             password = password.strip();
 
+            // Add attempt to CAPTCHA session.
+            AddAttemptToCaptchaList(username);
+            if (attemptsUntilCAPTCHA > 0 &&
+                    pendingCaptchaAccounts.get(username).shouldThrowCAPTCHA(attemptsUntilCAPTCHA)) {
+                state = LoginState.FAILURE_REQUIRE_CAPTCHA;
+                return state;
+            }
+
+
             // Get the account Object
             Account account = accounts.get(username);
 
             // If account does not exist, return fad credentials flag.
-            // NOTE: In real production I would throw also CAPTCHA for bad usernames attempts
-            // so the attacker wouldn't use it to find valid usernames.
             if (account == null) {
                 state = LoginState.FAILURE_BAD_CREDENTIALS;
                 return state;
             }
 
-            // Get the attempt number for logging.
-            attemptNumber = account.getBadLoginAttemptsCounter() + 1;
-
-            // Basic tests passed, log the attempt.
-            Instant timestamp = Instant.now();
-
-
-            // Throw CAPTCHA if needed.
-            if (shouldThrowCAPTCHA(account)) {
-                state = LoginState.FAILURE_REQUIRE_CAPTCHA;
+            // If account is locked, return account locked flag.
+            if (account.isAccountLocked()) {
+                state = LoginState.FAILURE_ACCOUNT_LOCKED;
                 return state;
             }
+
+            // Get the attempt number for logging.
+            attemptNumber = account.getBadLoginAttemptsCounter() + 1;
 
             // Apply pepper if used.
             password = addPepperIfUsed(password);
@@ -145,8 +153,17 @@ public class Server {
             // Password is wrong, return failure.
             if (!AuthService.authenticatePassword(account, password, hashAlgorithm)) {
                 state = LoginState.FAILURE_BAD_CREDENTIALS;
+
+                // Increase bad login attempts counter.
+                account.badLoginAttemptsIncreaser();
+                lockAccountIfNeeded(account);
+
                 return state;
+            } else {
+                // Successful login, reset bad login attempts counter.
+                account.resetAttemptLoginCounter();
             }
+
 
             // Add user to TOTP waiting list only if he is not waiting for TOTP already.
             if (account.isUsingTOTP() && !pendingTOTPAccounts.containsKey(username)) {
@@ -156,8 +173,12 @@ public class Server {
             }
 
             // All test passed, user has logged in.
+            // Reset CAPTCHA challenges for this user.
+            pendingCaptchaAccounts.remove(username);
+            account.resetAttemptLoginCounter(); // Reset bad login attempts counter.
             return LoginState.SUCCESS;
-        } finally {
+
+        } finally { // Log the attempt regardless of outcome.
             logAttempt(
                     instant.toString(),
                     (username == null) ? "null" : username,
@@ -191,7 +212,7 @@ public class Server {
                 return state;
             }
 
-            // Basic captcha check before proceeding.
+            // Basic attemptTOTP check before proceeding.
             if (attemptTOTP == null) {
                 state = LoginState.FAILURE_TOTP_INVALID;
                 return state;
@@ -254,7 +275,13 @@ public class Server {
         }
     }
 
-    public LoginState loginWithCAPTCHA(String username, String password, String captchaToken) {
+    /**
+     * verifies the CAPTCHA test for the given username.
+     * @param username // Username attempting to verify CAPTCHA.
+     * @param attemptCaptchaToken // CAPTCHA token provided by the user.
+     * @return CAPTCHA verification state.
+     */
+    public CaptchaState verifyCAPTCHA(String username, String attemptCaptchaToken) {
         long startTime = System.currentTimeMillis();
 
         // Simulate the CAPTCHA test time.
@@ -264,29 +291,42 @@ public class Server {
             Thread.currentThread().interrupt();
         }
 
-        // If CAPTCHA did not pass, log the attempt and return failure.
-        if (captchaToken.equals(generateCPATCHA(username)) == false) {
-            // Log the attempt.
-            logAttempt(
-                    Instant.now().toString(),
-                    (username == null) ? "null" : username,
-                    hashAlgorithm.toString(),
-                    (password == null) ? "null" : password,
-                    LoginState.FAILURE_CAPTCHA_INVALID,
-                    "Implement this",  // TODO: Implement protection flags.
-                    -1,
-                    (int)(System.currentTimeMillis() - startTime),
-                    String.valueOf(ExperimentManager.GROUP_SEED)
-            );
+        // Basic null checks.
+        if (username == null || attemptCaptchaToken == null) {
+            return CaptchaState.FAILURE_INCORRECT_CAPTCHA;
+        }
+        // Remove white spaces.
+        username = username.strip();
+        attemptCaptchaToken = attemptCaptchaToken.strip();
 
-            return LoginState.FAILURE_CAPTCHA_INVALID;
+
+        CaptchaState result;
+
+        if (attemptCaptchaToken.equals(generateCPATCHA(username))){ // Correct CAPTCHA
+            pendingCaptchaAccounts.remove(username); // Remove from pending CAPTCHA sessions.
+            result = CaptchaState.SUCCESS;
+        } else { // Incorrect CAPTCHA
+            result = CaptchaState.FAILURE_INCORRECT_CAPTCHA;
         }
 
-        // Proceed to normal login.
-        return login(username, password);
+        // Log the CAPTCHA attempt.
+        // TODO: Implement logging for CAPTCHA attempts if needed.
+        return result;
     }
 
 
+    /**
+     * Logs an authentication attempt.
+     * @param timestamp // Timestamp of the attempt.
+     * @param username // Username being targeted.
+     * @param hashMode // Type of hash being attacked.
+     * @param guess // The guessed password.
+     * @param resultState // Result of the attempt (e.g., SUCCESS, FAILURE).
+     * @param protectionFlags // Protection mechanisms in place (e.g., CAPTCHA, TOTP).
+     * @param userAttemptNumber // Number of attempts for this user.
+     * @param latencyMS // Latency in milliseconds until response.
+     * @param groupSeed // The seed of the group this project belongs to.
+     */
     private void logAttempt(
             String timestamp, String username, String hashMode, String guess, LoginState resultState,
             String protectionFlags, int userAttemptNumber, int latencyMS, String groupSeed
@@ -302,6 +342,18 @@ public class Server {
     }
 
     /**
+     *
+     */
+    private void lockAccountIfNeeded(Account account) {
+        if (account.getBadLoginAttemptsCounter() >= ACCOUNT_LOCK_THRESHOLD) {
+            // Lock account for server default minute.
+            account.lockAccountUntil(
+                    Instant.now().plus(LOCK_TIME_MINUTES, ChronoUnit.MINUTES)
+            );
+        }
+    }
+
+    /**
      * Returns a simple CAPTCHA token verifier.
      * @param username username requesting CAPTCHA.
      * @return CAPTCHA token verifier.
@@ -314,22 +366,18 @@ public class Server {
         return username + ExperimentManager.GROUP_SEED;
     }
 
-
     /**
-     * Helper method to decide if CAPTCHA should be thrown.
-     * @param account account to test for
-     * @return True if login attempts should return CAPTCHA.
+     * Adds an attempt to the CAPTCHA session for the given username.
+     * @param username The username attempting to log in.
      */
-    private boolean shouldThrowCAPTCHA(Account account) {
-        if (attemptsUntilCAPTCHA == 0) { // System is not using CAPTCHA.
-            return false;
+    private void AddAttemptToCaptchaList(String username) {
+        if (attemptsUntilCAPTCHA == 0) {
+            return; // CAPTCHA disabled.
         }
-        if (account.getBadLoginAttemptsCounter() >= attemptsUntilCAPTCHA) {
-            return true;
-        }
-        return false;
+        // Add attempt to CAPTCHA session.
+        pendingCaptchaAccounts.putIfAbsent(username, new CaptchaSession(username));
+        pendingCaptchaAccounts.get(username).addAttempt();
     }
-
 
     /**
      * Adds pepper to the password if pepper is used.
@@ -346,6 +394,7 @@ public class Server {
 
     /**
      * Private class to that represents account that is waiting for TOTP.
+     * This keeps track of the attempts to decide when to lock the account for the session.
      */
     private static class TotpSession {
         Account account;
@@ -356,12 +405,45 @@ public class Server {
             this.attempts = 0;
         }
 
+        void addAttempt() {
+            this.attempts += 1;
+        }
+
         /**
          * Restes the attempts of TOTP login.
          * Call after account locked for the session reset attempts.
          */
         void resetTries() {
             attempts = 0;
+        }
+    }
+
+    /**
+     * Private class to that represents a username trying to log in.
+     * This keeps track of the attempts to decide when to throw CAPTCHA.
+     */
+    private static class CaptchaSession {
+        String username; // Username that is trying to log in.
+        int attempts; // Attempts log in.
+
+        CaptchaSession(String username) {
+            this.username = username;
+            this.attempts = 0;
+        }
+
+        /**
+         * Checks if CAPTCHA should be thrown.
+         * @param attemptsUntilCAPTCHA Threshold of attempts until CAPTCHA is thrown.
+         * @return True if CAPTCHA should be thrown.
+         */
+        boolean shouldThrowCAPTCHA(int attemptsUntilCAPTCHA) {
+            return attempts >= attemptsUntilCAPTCHA;
+        }
+        /**
+         * Increases the attempts login.
+         */
+        void addAttempt() {
+            this.attempts += 1;
         }
     }
 }
