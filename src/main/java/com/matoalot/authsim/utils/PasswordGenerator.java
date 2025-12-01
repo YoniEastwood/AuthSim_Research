@@ -17,7 +17,7 @@ import java.util.Random;
 public class PasswordGenerator {
 
 
-    private static final List<String> COMMON_PASSWORDS_LIST = new ArrayList<>(); // Cache for common passwords.
+    public static final List<String> COMMON_PASSWORDS_LIST = new ArrayList<>(); // Cache for common passwords.
 
     static{loadCommonPasswords();} // Static block to load common passwords from file once.
 
