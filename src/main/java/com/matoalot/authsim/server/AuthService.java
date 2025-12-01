@@ -103,14 +103,6 @@ class AuthService {
                 throw new IllegalArgumentException("Unsupported hash algorithm: " + hashAlgorithm);
         }
 
-        // Handle the login attempt counter.
-        if (correctPassword) {
-            account.resetAttemptLoginCounter();
-        }
-        else {
-            account.badLoginAttemptsIncreaser();
-        }
-
         return correctPassword;
     }
 
