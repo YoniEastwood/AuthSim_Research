@@ -42,4 +42,20 @@ public class LogEntry {
         this.groupSeed = groupSeed;
     }
 
+    @Override
+    public String toString() {
+        return "LogEntry{" +
+                "groupSeed='" + groupSeed + '\'' +
+                ", timestamp='" + timestamp + '\'' +
+                ", username='" + username + '\'' +
+                ", hashType='" + hashType + '\'' +
+                ", guess='" + guess + '\'' +
+                ", result='" + result + '\'' +
+                ", protectionFlags='" + protectionFlags + '\'' +
+                ", userAttemptNumber=" + userAttemptNumber +
+                ", globalAttemptNumber=" + globalAttemptNumber +
+                ", latencyMS=" + latencyMS +
+                '}';
+    }
+
 }
