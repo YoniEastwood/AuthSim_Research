@@ -14,7 +14,8 @@ public class ExperimentManager {
     private static final int ACCOUNTS_WITH_MEDIUM_PASSWORD = 10; // Number of medium accounts in each experiment.
     private static final int ACCOUNTS_WITH_HARD_PASSWORD = 10; // Number of hard accounts in each experiment.
 
-    public static final int GROUP_SEED = ***REMOVED*** ^ 99999999; // TODO: Sara, enter you ID here.
+    public static final int GROUP_SEED = ***REMOVED*** ^ ***REMOVED***;
+
 
 
     public static void main(String[] args) {
@@ -45,29 +46,43 @@ public class ExperimentManager {
             Server experimentServer = new Server(
                     config.hashAlgorithm,
                     config.isPepperEnabled,
-                    config.attemptsUntilCAPTCHA
+                    config.attemptsUntilCAPTCHA,
+                    config.accountLockThreshold,
+                    config.lockTimeMinutes,
+                    config.totpTriesUntilSessionLock,
+                    config.captchaLatencyMS
             );
 
+            // Register accounts with different password strengths.
             for(int i = 1; i <= ACCOUNTS_WITH_EASY_PASSWORD; i++) {
-                experimentServer.register(
-                        "easyUser_" + i,
-                        PasswordGenerator.getEasyPassword(random),
-                        config.isTOTPEnabled
-                );
+                String username = "easyUser_" + i;
+                String password = PasswordGenerator.getEasyPassword(random);
+
+                // Register user.
+                experimentServer.register(username, password);
+                if (config.isTOTPEnabled) {
+                    experimentServer.enableTOTPForUser(username, password);
+                }
             }
             for(int i = 1; i <= ACCOUNTS_WITH_MEDIUM_PASSWORD; i++) {
-                experimentServer.register(
-                        "mediumUser_" + i,
-                        PasswordGenerator.getMediumPassword(random),
-                        config.isTOTPEnabled
-                );
+                String username = "mediumUser_" + i;
+                String password = PasswordGenerator.getMediumPassword(random);
+
+                // Register user.
+                experimentServer.register(username, password);
+                if (config.isTOTPEnabled) {
+                    experimentServer.enableTOTPForUser(username, password);
+                }
             }
             for(int i = 1; i <= ACCOUNTS_WITH_HARD_PASSWORD; i++) {
-                experimentServer.register(
-                        "hardUser_" + i,
-                        PasswordGenerator.getHardPassword(random),
-                        config.isTOTPEnabled
-                );
+                String username = "hardUser_" + i;
+                String password = PasswordGenerator.getHardPassword(random);
+
+                // Register user.
+                experimentServer.register(username, password);
+                if (config.isTOTPEnabled) {
+                    experimentServer.enableTOTPForUser(username, password);
+                }
             }
 
         }

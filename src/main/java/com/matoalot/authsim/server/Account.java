@@ -12,7 +12,7 @@ class Account {
     private int failedLoginAttempts = 0; // Counter for failed login attempts since last success.
 
     private final String manualSalt; // Salt value. ONLY IF HASHING ALGORITHM DOESN'T HANDLE SALT INTERNALLY.
-    private boolean isUsingSaltManually; // Flag indicating if salt is used.
+    private final boolean isUsingSaltManually; // Flag indicating if salt is used.
 
     private boolean isUsingTOTP; // Flag indicating if TOTP is enabled.
     private String secretTOTP; // TOTP secret key if TOTP is enabled.

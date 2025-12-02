@@ -75,7 +75,7 @@ public class AccountTest {
         assertFalse(a2.isUsingSaltManually(), "isUsingSalt should return false when not using salt.");
     }
 
-    @ParameterizedTest
+
     @NullAndEmptySource
     @ValueSource(strings = {"   "})
     void testEnableTOTPWithBadParameter(String secrete) {

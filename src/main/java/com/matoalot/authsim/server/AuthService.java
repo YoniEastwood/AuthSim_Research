@@ -2,7 +2,6 @@ package com.matoalot.authsim.server;
 
 import com.matoalot.authsim.model.HashAlgorithm;
 import com.matoalot.authsim.utils.HashingUtil;
-import com.matoalot.authsim.utils.TOTPUtil;
 
 
 class AuthService {
@@ -12,13 +11,17 @@ class AuthService {
      * Creates a new account with the specified parameters.
      * @param username The username for the account.
      * @param password Password for the account.
-     * @param enableTOTP Flag indicating if TOTP is enabled.
      * @param hashAlgorithm The hashing algorithm to use.
      * @return The created Account object.
      */
     static Account createAccount(
-        String username, String password, boolean enableTOTP, HashAlgorithm hashAlgorithm) {
-        // TODO: test arguments again for code robustness. Better to Create a helper Class for testing.
+        String username, String password, HashAlgorithm hashAlgorithm) {
+
+        // Validate arguments
+        if (username == null || username.isBlank() ||
+            password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Username or password is null/empty");
+        }
 
         String hashedPassword; // Hashed password to be computed.
         String salt = null; // If using manual salt.
@@ -47,11 +50,6 @@ class AuthService {
         // If using SHA-256, set the salt manually.
         if (hashAlgorithm == HashAlgorithm.SHA256) {
             accountBuilder = accountBuilder.useSaltManually(salt);
-        }
-
-        // If TOTP is enabled, generate and set the TOTP secret.
-        if (enableTOTP) {
-            accountBuilder.enableTOTP(TOTPUtil.generateSecret());
         }
 
         return accountBuilder.build(); // Return the created account.
@@ -87,6 +85,7 @@ class AuthService {
                 if(!account.isUsingSaltManually()) {
                     throw new IllegalStateException("Account should always use manual salt for SHA-256.");
                 }
+
                 String salt = account.getManualSalt();
                 correctPassword = HashingUtil.verifySHA256(passwordAttempt, salt,  account.getPasswordHash());
                 break;

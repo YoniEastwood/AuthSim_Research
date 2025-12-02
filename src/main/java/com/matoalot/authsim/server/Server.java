@@ -27,22 +27,54 @@ public class Server {
 
     private final int attemptsUntilCAPTCHA; // 0 means system will not throw CAPTCHA.
 
-    private static final int ACCOUNT_LOCK_THRESHOLD = 5; // Lock account after this many bad login attempts.
-    private static final int LOCK_TIME_MINUTES = 5; // Lock time in minutes after reaching bad login attempts threshold.
-    private final int TOTP_TRIES_UNTIL_SESSION_LOCK = 3; // Lock account for 1 TOTP session after this amount of TOTP tries.
-    private static final long CAPTCHA_LATENCY_MS = 50; // Simulate CAPTCHA time to authenticate.
+    // Lock account after this many bad login attempts.
+    // 0 means account lock disabled.
+    private final int accountLockThreshold;
+    private final int lockTimeMinutes; // Lock time in minutes after reaching bad login attempts threshold.
+
+    private final int totpTriesUntilSessionLock; // Lock account for 1 TOTP session after this amount of TOTP tries.
+    private final long captchaLatencyMS; // Simulate CAPTCHA time to authenticate.
 
 
     /**
      * Constructor to initialize the server with specified security settings.
      * @param hashAlgorithm Hashing algorithm to be used.
      * @param isPepperEnabled Pepper enabled flag.
+     * @param attemptsUntilCAPTCHA Number of failed attempts before CAPTCHA is required.
+     * @param accountLockThreshold Number of failed attempts before account is locked.
+     * @param lockTimeMinutes Duration in minutes for which the account remains locked.
+     * @param totpTriesUntilSessionLock Number of TOTP attempts before session lock
+     * @param captchaLatencyMS Simulated latency for CAPTCHA verification in milliseconds.
      */
-    public Server(HashAlgorithm hashAlgorithm, boolean isPepperEnabled, int attemptsUntilCAPTCHA) {
+    public Server(
+            HashAlgorithm hashAlgorithm, boolean isPepperEnabled, int attemptsUntilCAPTCHA,
+            int accountLockThreshold, int lockTimeMinutes, int totpTriesUntilSessionLock, long captchaLatencyMS
+
+    ) {
         if (attemptsUntilCAPTCHA < 0) {
             throw new IllegalArgumentException("Attempts until CAPTCHA thrown cannot be negative");
         }
         this.attemptsUntilCAPTCHA = attemptsUntilCAPTCHA;
+
+        if (accountLockThreshold < 0) {
+            throw new IllegalArgumentException("Account lock threshold cannot be negative");
+        }
+        this.accountLockThreshold = accountLockThreshold;
+
+        if (lockTimeMinutes < 0) {
+            throw new IllegalArgumentException("Lock time minutes cannot be negative");
+        }
+        this.lockTimeMinutes = lockTimeMinutes;
+
+        if (totpTriesUntilSessionLock < 1) {
+            throw new IllegalArgumentException("TOTP tries until session lock must be at least 1");
+        }
+        this.totpTriesUntilSessionLock = totpTriesUntilSessionLock;
+
+        if (captchaLatencyMS < 0) {
+            throw new IllegalArgumentException("CAPTCHA latency cannot be negative");
+        }
+        this.captchaLatencyMS = captchaLatencyMS;
 
         this.accounts = new HashMap<>();
         this.pendingTOTPAccounts = new HashMap<>();
@@ -55,9 +87,8 @@ public class Server {
      * Registers a new user account with the server.
      * @param username The username for the new account.
      * @param password The password for the new account.
-     * @param enableTOTP Flag indicating if TOTP is enabled for this account.
      */
-    public RegisterState register(String username, String password, boolean enableTOTP) {
+    public RegisterState register(String username, String password) {
         // Check not null arguments
         if (username == null || password == null) {
             return RegisterState.FAILURE_INVALID_LENGTH;
@@ -88,7 +119,7 @@ public class Server {
 
         // Create the account using AuthService.
         Account newAccount = AuthService.createAccount(
-                username, password, enableTOTP, hashAlgorithm);
+                username, password, hashAlgorithm);
 
         // Store the account in the server's account list.
         accounts.put(username, newAccount);
@@ -108,6 +139,7 @@ public class Server {
         long startTime = System.currentTimeMillis(); // Start time for latency calculation.
         LoginState state = LoginState.FAILURE_UNKNOWN; // Default state.
         int attemptNumber = 0;
+        Account account = null;
 
         try {
             if (username == null || password == null ||
@@ -130,7 +162,7 @@ public class Server {
 
 
             // Get the account Object
-            Account account = accounts.get(username);
+            account = accounts.get(username);
 
             // If account does not exist, return fad credentials flag.
             if (account == null) {
@@ -166,8 +198,9 @@ public class Server {
 
 
             // Add user to TOTP waiting list only if he is not waiting for TOTP already.
-            if (account.isUsingTOTP() && !pendingTOTPAccounts.containsKey(username)) {
-                pendingTOTPAccounts.put(username, new TotpSession(account));
+            // If he is waiting for TOTP, do not reset the session.
+            if (account.isUsingTOTP()) {
+                pendingTOTPAccounts.putIfAbsent(username, new TotpSession(account));
                 state = LoginState.FAILURE_TOTP_REQUIRED;
                 return state;
             }
@@ -185,7 +218,7 @@ public class Server {
                     hashAlgorithm.toString(),
                     (password == null) ? "null" : password,
                     state,
-                    "Implement this",  // TODO: Implement protection flags.
+                    getProtectionFlags(account),
                     attemptNumber,
                     (int)(System.currentTimeMillis() - startTime), String.valueOf(ExperimentManager.GROUP_SEED)
             );
@@ -194,16 +227,17 @@ public class Server {
 
 
     /**
-     * After log in, users may need to
-     * @param username
-     * @param attemptTOTP
-     * @return
+     * After login, verifies the TOTP code for the given username.
+     * @param username Username.
+     * @param attemptTOTP TOTP code attempt.
+     * @return TOTP verification state.
      */
     public LoginState verifyTOTP(String username, String attemptTOTP) {
         Instant instant = Instant.now();
         long startTime = System.currentTimeMillis();
         LoginState state = LoginState.FAILURE_UNKNOWN;
         int attemptNumber = 0;
+        Account account = null;
 
         try {
             // If username is not pending verification, return failure.
@@ -223,7 +257,7 @@ public class Server {
             username = username.strip();
 
             // Get the account.
-            Account account = accounts.get(username);
+            account = accounts.get(username);
             TotpSession totpSession = pendingTOTPAccounts.get(username);
 
             // If account lock, quit.
@@ -233,11 +267,9 @@ public class Server {
             }
 
             // If user tried too much key, lock him for this session.
-            if (totpSession.attempts >= TOTP_TRIES_UNTIL_SESSION_LOCK) {
+            if (totpSession.attempts >= totpTriesUntilSessionLock) {
                 // Lock account for this session.
-                account.lockAccountUntil(
-                        Instant.now().plus(30, ChronoUnit.SECONDS)
-                );
+                account.lockAccountUntil(Instant.now().plus(30, ChronoUnit.SECONDS));
                 // Reset the attempts.
                 totpSession.resetTries();
                 state = LoginState.FAILURE_ACCOUNT_LOCKED;
@@ -256,7 +288,7 @@ public class Server {
             }
 
             // Unsuccessful login
-            totpSession.attempts += 1; // Record attempt.
+            totpSession.addAttempt(); // Record attempt.
             state = LoginState.FAILURE_TOTP_INVALID;
             return state;
 
@@ -267,7 +299,7 @@ public class Server {
                     "TOTP",
                     (attemptTOTP == null) ? "null" : attemptTOTP,
                     state,
-                    "Implement this",  // TODO: Implement protection flags.
+                    getProtectionFlags(account),
                     attemptNumber,
                     (int)(System.currentTimeMillis() - startTime),
                     String.valueOf(ExperimentManager.GROUP_SEED)
@@ -277,16 +309,15 @@ public class Server {
 
     /**
      * verifies the CAPTCHA test for the given username.
-     * @param username // Username attempting to verify CAPTCHA.
-     * @param attemptCaptchaToken // CAPTCHA token provided by the user.
+     * @param username  Username attempting to verify CAPTCHA.
+     * @param attemptCaptchaToken CAPTCHA token provided by the user.
      * @return CAPTCHA verification state.
      */
     public CaptchaState verifyCAPTCHA(String username, String attemptCaptchaToken) {
-        long startTime = System.currentTimeMillis();
 
         // Simulate the CAPTCHA test time.
         try {
-            Thread.sleep(CAPTCHA_LATENCY_MS);
+            Thread.sleep(captchaLatencyMS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -309,11 +340,76 @@ public class Server {
             result = CaptchaState.FAILURE_INCORRECT_CAPTCHA;
         }
 
-        // Log the CAPTCHA attempt.
-        // TODO: Implement logging for CAPTCHA attempts if needed.
         return result;
+
+        // Can add logging for CAPTCHA if needed in the future.
     }
 
+
+    /**
+     * Enables TOTP for a user if credentials are valid and returns the TOTP secret.
+     * If user already has TOTP enabled, returns null for security reasons.
+     * @param username The username of the account.
+     * @param password The password of the account.
+     * @return The TOTP secret if credentials are valid; otherwise, null.
+     */
+    public String enableTOTPForUser(String username, String password) {
+        // If user does not exist or bad credentials, return null.
+        if (login(username, password) != LoginState.SUCCESS) {
+            return null; // Invalid credentials.
+        }
+
+        // Get the account.
+        Account account = accounts.get(username);
+        if (account == null) {
+            throw new IllegalStateException("Account should exist after successful login.");
+        }
+
+        // If TOTP is already enabled, return null for security reasons.
+        if (account.isUsingTOTP()) {
+            return null;
+        }
+
+        // Generate TOTP secret and enable TOTP for the account.
+        String totpSecret = TOTPUtil.generateSecret();
+        account.enableTOTP(totpSecret);
+
+        return totpSecret;
+    }
+
+
+    /**
+     * Returns a string describing the protection flags for the given account and system.
+     * @param account The account to check.
+     * @return A string describing the protection mechanisms in place.
+     */
+    private String getProtectionFlags(Account account) {
+        if (account == null) {
+            return "Account does not exist. No protections.";
+        }
+
+        // Salt is always enabled in our system.
+        String result = "Salt";
+
+        if (isPepperEnabled) {
+            result += " + Pepper";
+        }
+
+        if (attemptsUntilCAPTCHA > 0) {
+            result += " + CAPTCHA required after " + attemptsUntilCAPTCHA + " attempts";
+        }
+
+        if (accountLockThreshold > 0) {
+            result += " + Account locks after " + accountLockThreshold + " bad attempts for " + lockTimeMinutes + " minutes";
+        }
+
+        if (account.isUsingTOTP()) {
+            result += " + TOTP enabled";
+            result += " + TOTP session lock after " + totpTriesUntilSessionLock + " bad attempts";
+        }
+
+        return result;
+    }
 
     /**
      * Logs an authentication attempt.
@@ -342,13 +438,18 @@ public class Server {
     }
 
     /**
-     *
+      If locking is enabled, lock the account if reached threshold.
+        * @param account Account to check and lock if needed.
      */
     private void lockAccountIfNeeded(Account account) {
-        if (account.getBadLoginAttemptsCounter() >= ACCOUNT_LOCK_THRESHOLD) {
+        if (accountLockThreshold == 0) {
+            return; // Account lock disabled.
+        }
+
+        if (account.getBadLoginAttemptsCounter() >= accountLockThreshold) {
             // Lock account for server default minute.
             account.lockAccountUntil(
-                    Instant.now().plus(LOCK_TIME_MINUTES, ChronoUnit.MINUTES)
+                    Instant.now().plus(lockTimeMinutes, ChronoUnit.MINUTES)
             );
         }
     }
