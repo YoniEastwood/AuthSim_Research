@@ -1,11 +1,14 @@
 package com.matoalot.authsim;
 
+import com.matoalot.authsim.attacker.Attacker;
 import com.matoalot.authsim.model.SecurityConfig;
 import com.matoalot.authsim.server.Server;
 import com.matoalot.authsim.utils.ConfigLoader;
 import com.matoalot.authsim.utils.PasswordGenerator;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -14,12 +17,13 @@ public class ExperimentManager {
     private static final int ACCOUNTS_WITH_MEDIUM_PASSWORD = 10; // Number of medium accounts in each experiment.
     private static final int ACCOUNTS_WITH_HARD_PASSWORD = 10; // Number of hard accounts in each experiment.
 
-    public static final int GROUP_SEED = ***REMOVED*** ^ ***REMOVED***;
+    public static final int GROUP_SEED = 0;
 
 
 
     public static void main(String[] args) {
         Random random = new Random(GROUP_SEED); // Seeded random for reproducibility.
+        List<String> allUsernames = new ArrayList<>();
 
         System.out.println("---Starting Experiment Manager---\n");
 
@@ -60,6 +64,7 @@ public class ExperimentManager {
 
                 // Register user.
                 experimentServer.register(username, password);
+                allUsernames.add(username);
                 if (config.isTOTPEnabled) {
                     experimentServer.enableTOTPForUser(username, password);
                 }
@@ -70,6 +75,7 @@ public class ExperimentManager {
 
                 // Register user.
                 experimentServer.register(username, password);
+                allUsernames.add(username);
                 if (config.isTOTPEnabled) {
                     experimentServer.enableTOTPForUser(username, password);
                 }
@@ -80,13 +86,29 @@ public class ExperimentManager {
 
                 // Register user.
                 experimentServer.register(username, password);
+                allUsernames.add(username);
                 if (config.isTOTPEnabled) {
                     experimentServer.enableTOTPForUser(username, password);
                 }
             }
+            int maxAttempts = 5;
+            long timeLimitMs = 10_000; // 10 seconds
 
+            Attacker attacker = new Attacker(
+                    experimentServer,
+                    allUsernames,
+                    maxAttempts,
+                    timeLimitMs
+            );
+
+            System.out.println("Running Brute Force for this experiment...");
+            attacker.bruteForceAllUsers();
+
+            System.out.println("Running Password Spraying for this experiment...");
+            attacker.passwordSpraying();
+
+            System.out.println("Finished experiment " + config.experimentId + "\n");
         }
 
     } // End of main method.
-
 } // End of com.matoalot.authsim.ExperimentManager class.
