@@ -1,13 +1,12 @@
 package com.matoalot.authsim.server;
 
-import com.google.gson.annotations.SerializedName;
-import com.matoalot.authsim.ExperimentManager;
+
+import com.matoalot.authsim.Logger.CsvLogger;
 import com.matoalot.authsim.model.CaptchaState;
 import com.matoalot.authsim.model.HashAlgorithm;
 import com.matoalot.authsim.model.LoginState;
 import com.matoalot.authsim.model.RegisterState;
 import com.matoalot.authsim.utils.TOTPUtil;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,12 +14,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.params.provider.ValueSources;
-
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ServerTest {
     private static Server sha256;
@@ -34,7 +30,8 @@ public class ServerTest {
                 0,
                 5,
                 2,
-                50
+                50,
+                new CsvLogger("test_log.csv")
         );
     }
 
@@ -115,7 +112,8 @@ public class ServerTest {
                 0,
                 5,
                 2,
-                50
+                50,
+                new CsvLogger("test_log.csv")
         );
 
         // Register user with CAPTCHA enabled
@@ -172,7 +170,8 @@ public class ServerTest {
                 0,
                 5,
                 2,
-                50
+                50,
+                new CsvLogger("test_log.csv")
         );
 
         // Test registration
@@ -203,7 +202,8 @@ public class ServerTest {
                 0,
                 5,
                 2,
-                50
+                50,
+                new CsvLogger("test_log.csv")
         );
 
         // Test registration
@@ -261,7 +261,8 @@ public class ServerTest {
                 0,
                 5,
                 totpTriesUntilSessionLock,
-                50
+                50,
+                new CsvLogger("test_log.csv")
         );
 
         String username = "totpUser";
@@ -304,7 +305,8 @@ public class ServerTest {
                 badLoginAttemptsUntilSessionLock,
                 1,
                 2,
-                50
+                50,
+                new CsvLogger("test_log.csv")
         );
 
         String username = "lockUser";
@@ -335,7 +337,8 @@ public class ServerTest {
                 2, // 2 bad attempts to lock
                 1, // 1 minute lock time
                 2,
-                50
+                50,
+                new CsvLogger("test_log.csv")
         );
 
         String username = "tempLockUser";
