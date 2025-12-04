@@ -17,6 +17,8 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.ValueSources;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -321,5 +323,49 @@ public class ServerTest {
         // Next attempt should result in account lock
         assertEquals(LoginState.FAILURE_ACCOUNT_LOCKED, server.login(username, "wrongPass"),
                 "Expected FAILURE_ACCOUNT_LOCKED after exceeding bad login attempts");
+    }
+
+    // Test unlock after lock time expires.
+    @Test
+    void testLockAndUnlock() {
+        Server server = new Server(
+                HashAlgorithm.SHA256,
+                false,
+                0,
+                2, // 2 bad attempts to lock
+                1, // 1 minute lock time
+                2,
+                50
+        );
+
+        String username = "tempLockUser";
+        String password = "tempLockPass";
+
+        assertEquals(RegisterState.SUCCESS, server.register(username, password),
+                "Expected SUCCESS for valid registration");
+
+        // Simulate bad login attempts to trigger lock
+        for (int i = 1; i <= 2; i++) {
+            assertEquals(LoginState.FAILURE_BAD_CREDENTIALS, server.login(username, "wrongPass"),
+                    "Expected FAILURE_BAD_CREDENTIALS for wrong password attempt " + i);
+        }
+
+        // Account should be locked now
+        assertEquals(LoginState.FAILURE_ACCOUNT_LOCKED, server.login(username, "wrongPass"),
+                "Expected FAILURE_ACCOUNT_LOCKED after exceeding bad login attempts");
+
+        try {
+            TimeUnit.MINUTES.sleep(1);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Sleep interrupted: " + e.getMessage());
+        }
+
+        assertEquals(LoginState.FAILURE_BAD_CREDENTIALS, server.login(username, "wrongPass"),
+                "Expected FAILURE_BAD_CREDENTIALS after lock time expired with wrong password");
+        assertEquals(LoginState.SUCCESS, server.login(username, password),
+                "Expected SUCCESS after lock time expired with correct password");
+
     }
 }

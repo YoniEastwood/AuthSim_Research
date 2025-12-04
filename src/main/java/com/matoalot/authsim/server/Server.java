@@ -447,6 +447,9 @@ public class Server {
         }
 
         if (account.getBadLoginAttemptsCounter() >= accountLockThreshold) {
+            // Reset bad login attempts counter.
+            account.resetAttemptLoginCounter();
+
             // Lock account for server default minute.
             account.lockAccountUntil(
                     Instant.now().plus(lockTimeMinutes, ChronoUnit.MINUTES)
