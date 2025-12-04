@@ -64,7 +64,7 @@ public class PasswordGenerator {
         // Password of length 4.
         String chars = "abcdefghijklmnopqrstuvwxyz";
         StringBuilder password = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 4; i++) {
             password.append(chars.charAt(random.nextInt(chars.length())));
         }
 
