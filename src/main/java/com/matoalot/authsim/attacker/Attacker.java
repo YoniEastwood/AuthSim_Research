@@ -126,14 +126,14 @@ public class Attacker {
                 case FAILURE_ACCOUNT_LOCKED -> {
                     long lockUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(PAUSE_ATTACK_ON_LOCK_MINUTES);
                     account.setLockedUntil(lockUntil);
-                    System.out.println("Account locked: " + account.getUsername() + ". Will retry after lock period.");
+                    System.out.println("Account locked: " + account.getUsername() + ". Will retry again in " + PAUSE_ATTACK_ON_LOCK_MINUTES + " minutes....");
                     // Re-add account to queue for further attempts after lock period.
                     queue.add(account);
                     // Get next account from queue.
                     account = queue.poll();
                 }
                 case FAILURE_REQUIRE_CAPTCHA -> {
-                    System.err.println("Error: CAPTCHA requirement should have been handled already for username: " + account.getUsername());
+                    System.err.println("Warning: CAPTCHA requirement should have been handled already for username: " + account.getUsername());
                 }
                 case FAILURE_TOTP_REQUIRED -> {
                     System.out.println("Found password for TOTP protected account: " + account.getUsername() + " with password: " + password);
@@ -143,14 +143,14 @@ public class Attacker {
                 }
                 default -> {
                     // Not expected. Log for further analysis.
-                    System.err.println("Error: Unexpected login state for username: " + account.getUsername() + " with password: " + password + ". State: " + loginState);
+                    System.err.println("Warning: Unexpected login state for username: " + account.getUsername() + " with password: " + password + ". State: " + loginState);
                     // Re-add account to queue for further attempts.
                     queue.add(account);
                 }
             } // End of switch case
 
             if (account.isLocked()) {
-                System.out.println("All accounts are currently locked. Sleeping for lock period...");
+                System.out.println("All accounts are currently locked. Sleeping for " + PAUSE_ATTACK_ON_LOCK_MINUTES + " minutes...");
                 try {
                     TimeUnit.MINUTES.sleep(PAUSE_ATTACK_ON_LOCK_MINUTES);
 
@@ -231,7 +231,7 @@ public class Attacker {
                     }
                     default -> {
                         // Not expected. Log for further analysis.
-                        System.err.println("Error: Unexpected login state for username: " + username + " with password: " + commonPassword + ". State: " + loginState);
+                        System.err.println("Warning: Unexpected login state for username: " + username + " with password: " + commonPassword + ". State: " + loginState);
                     }
                 } // End of switch case
 
