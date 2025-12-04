@@ -213,7 +213,8 @@ public class Server {
             // Reset CAPTCHA challenges for this user.
             pendingCaptchaAccounts.remove(username);
             account.resetAttemptLoginCounter(); // Reset bad login attempts counter.
-            return LoginState.SUCCESS;
+            state = LoginState.SUCCESS;
+            return state;
 
         } finally { // Log the attempt regardless of outcome.
             logAttempt(
