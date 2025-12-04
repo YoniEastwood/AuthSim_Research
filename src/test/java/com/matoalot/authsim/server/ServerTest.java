@@ -29,7 +29,6 @@ public class ServerTest {
                 0,
                 0,
                 5,
-                2,
                 50,
                 new CsvLogger("test_log.csv")
         );
@@ -111,7 +110,6 @@ public class ServerTest {
                 loginAttemptsUntilCaptcha,
                 0,
                 5,
-                2,
                 50,
                 new CsvLogger("test_log.csv")
         );
@@ -169,7 +167,6 @@ public class ServerTest {
                 0,
                 0,
                 5,
-                2,
                 50,
                 new CsvLogger("test_log.csv")
         );
@@ -201,7 +198,6 @@ public class ServerTest {
                 0,
                 0,
                 5,
-                2,
                 50,
                 new CsvLogger("test_log.csv")
         );
@@ -251,16 +247,13 @@ public class ServerTest {
 
 
     @DisplayName("Test to many bad TOTP logins should Lock account")
-    @ParameterizedTest(name = "totpTriesUntilSessionLock: {0}")
-    @ValueSource(ints = {1, 2, 3, 5})
-    void testTOTPFlow(int totpTriesUntilSessionLock) {
+    void testTOTPFlow() {
         Server server = new Server(
                 HashAlgorithm.SHA256,
                 false,
                 0,
                 0,
                 5,
-                totpTriesUntilSessionLock,
                 50,
                 new CsvLogger("test_log.csv")
         );
@@ -282,7 +275,7 @@ public class ServerTest {
                 "Expected TOTP Request for valid login");
 
         // Simulate TOTP verification attempts
-        for (int i = 1; i <= totpTriesUntilSessionLock; i++) {
+        for (int i = 1; i <= 5; i++) {
             assertEquals(LoginState.FAILURE_TOTP_INVALID, server.verifyTOTP(username, "wrongTOTP"),
                     "Expected FAILURE_TOTP_INVALID for wrong TOTP attempt " + i);
         }
@@ -304,7 +297,6 @@ public class ServerTest {
                 0,
                 badLoginAttemptsUntilSessionLock,
                 1,
-                2,
                 50,
                 new CsvLogger("test_log.csv")
         );
@@ -336,7 +328,6 @@ public class ServerTest {
                 0,
                 2, // 2 bad attempts to lock
                 1, // 1 minute lock time
-                2,
                 50,
                 new CsvLogger("test_log.csv")
         );

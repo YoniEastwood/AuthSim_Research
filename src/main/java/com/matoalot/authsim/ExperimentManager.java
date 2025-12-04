@@ -85,7 +85,6 @@ public class ExperimentManager {
                 config.attemptsUntilCAPTCHA,
                 config.accountLockThreshold,
                 config.lockTimeMinutes,
-                config.totpTriesUntilSessionLock,
                 config.captchaLatencyMS,
                 logger
         );

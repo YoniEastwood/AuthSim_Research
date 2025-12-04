@@ -32,7 +32,7 @@ public class Server {
     private final int accountLockThreshold;
     private final int lockTimeMinutes; // Lock time in minutes after reaching bad login attempts threshold.
 
-    private final int totpTriesUntilSessionLock; // Lock account for 1 TOTP session after this amount of TOTP tries.
+    private final int totpTriesUntilSessionLock = 5; // Lock account for 1 TOTP session after this amount of TOTP tries.
     private final long captchaLatencyMS; // Simulate CAPTCHA time to authenticate.
 
     private final CsvLogger logger; // Logger for logging attempts.
@@ -46,12 +46,11 @@ public class Server {
      * @param attemptsUntilCAPTCHA Number of failed attempts before CAPTCHA is required.
      * @param accountLockThreshold Number of failed attempts before account is locked.
      * @param lockTimeMinutes Duration in minutes for which the account remains locked.
-     * @param totpTriesUntilSessionLock Number of TOTP attempts before session lock
      * @param captchaLatencyMS Simulated latency for CAPTCHA verification in milliseconds.
      */
     public Server(
             HashAlgorithm hashAlgorithm, boolean isPepperEnabled, int attemptsUntilCAPTCHA, int accountLockThreshold,
-            int lockTimeMinutes, int totpTriesUntilSessionLock, long captchaLatencyMS, CsvLogger logger
+            int lockTimeMinutes, long captchaLatencyMS, CsvLogger logger
 
     ) {
         if (attemptsUntilCAPTCHA < 0) {
@@ -68,11 +67,6 @@ public class Server {
             throw new IllegalArgumentException("Lock time minutes cannot be negative");
         }
         this.lockTimeMinutes = lockTimeMinutes;
-
-        if (totpTriesUntilSessionLock < 1) {
-            throw new IllegalArgumentException("TOTP tries until session lock must be at least 1");
-        }
-        this.totpTriesUntilSessionLock = totpTriesUntilSessionLock;
 
         if (captchaLatencyMS < 0) {
             throw new IllegalArgumentException("CAPTCHA latency cannot be negative");

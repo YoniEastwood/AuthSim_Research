@@ -8,7 +8,6 @@
     "attemptsUntilCAPTCHA": "1000000",
     "accountLockThreshold": "1000000",
     "lockTimeMinutes": "0",
-    "totpTriesUntilSessionLock": "0",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "30",
     "maxAttempts": "100000"
@@ -22,7 +21,6 @@
     "attemptsUntilCAPTCHA": "1000000",
     "accountLockThreshold": "1000000",
     "lockTimeMinutes": "0",
-    "totpTriesUntilSessionLock": "0",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "60",
     "maxAttempts": "50000"
@@ -36,7 +34,6 @@
     "attemptsUntilCAPTCHA": "1000000",
     "accountLockThreshold": "1000000",
     "lockTimeMinutes": "0",
-    "totpTriesUntilSessionLock": "0",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "60",
     "maxAttempts": "50000"
@@ -50,7 +47,6 @@
     "attemptsUntilCAPTCHA": "1000000",
     "accountLockThreshold": "3",
     "lockTimeMinutes": "5",
-    "totpTriesUntilSessionLock": "0",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "60",
     "maxAttempts": "100000"
@@ -64,7 +60,6 @@
     "attemptsUntilCAPTCHA": "3",
     "accountLockThreshold": "1000000",
     "lockTimeMinutes": "0",
-    "totpTriesUntilSessionLock": "0",
     "captchaLatencyMS": "2000",
     "timeLimitMinutes": "60",
     "maxAttempts": "100000"
@@ -78,7 +73,6 @@
     "attemptsUntilCAPTCHA": "3",
     "accountLockThreshold": "5",
     "lockTimeMinutes": "10",
-    "totpTriesUntilSessionLock": "3",
     "captchaLatencyMS": "500",
     "timeLimitMinutes": "120",
     "maxAttempts": "100000"

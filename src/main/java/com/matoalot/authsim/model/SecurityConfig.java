@@ -12,7 +12,6 @@ public class SecurityConfig {
     public int attemptsUntilCAPTCHA; // Number of failed attempts before CAPTCHA is enforced.
     public int accountLockThreshold; // Number of failed attempts before account lockout.
     public int lockTimeMinutes; // Duration of account lockout in minutes.
-    public int totpTriesUntilSessionLock; // Number of TOTP failures before session lock.
     public int captchaLatencyMS; // Latency in milliseconds for CAPTCHA processing.
     public int maxAttempts; // Maximum number of attempts allowed in the experiment.
     public int timeLimitMinutes; // Time limit for the experiment in minutes.
@@ -32,7 +31,6 @@ public class SecurityConfig {
                 "\n  Attempts Until CAPTCHA: " + attemptsUntilCAPTCHA +
                 "\n  Account Lock Threshold: " + accountLockThreshold +
                 "\n  Lock Time (minutes): " + lockTimeMinutes +
-                "\n  TOTP Tries Until Session Lock: " + totpTriesUntilSessionLock +
                 "\n  CAPTCHA Latency (ms): " + captchaLatencyMS  +
                 "\n  Max Attempts: " + maxAttempts +
                 "\n  Time Limit (minutes): " + timeLimitMinutes + "\n";
