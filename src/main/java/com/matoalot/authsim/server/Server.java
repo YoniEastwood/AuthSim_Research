@@ -1,7 +1,7 @@
 package com.matoalot.authsim.server;
 import com.matoalot.authsim.ExperimentManager;
+import com.matoalot.authsim.Logger.CsvLogger;
 import com.matoalot.authsim.Logger.LogEntry;
-import com.matoalot.authsim.Logger.LoggerManager;
 import com.matoalot.authsim.model.CaptchaState;
 import com.matoalot.authsim.model.HashAlgorithm;
 import com.matoalot.authsim.model.LoginState;
@@ -35,6 +35,9 @@ public class Server {
     private final int totpTriesUntilSessionLock; // Lock account for 1 TOTP session after this amount of TOTP tries.
     private final long captchaLatencyMS; // Simulate CAPTCHA time to authenticate.
 
+    private final CsvLogger logger; // Logger for logging attempts.
+
+    private int totalLoginAttempts = 0; // Total login attempts counter.
 
     /**
      * Constructor to initialize the server with specified security settings.
@@ -47,8 +50,8 @@ public class Server {
      * @param captchaLatencyMS Simulated latency for CAPTCHA verification in milliseconds.
      */
     public Server(
-            HashAlgorithm hashAlgorithm, boolean isPepperEnabled, int attemptsUntilCAPTCHA,
-            int accountLockThreshold, int lockTimeMinutes, int totpTriesUntilSessionLock, long captchaLatencyMS
+            HashAlgorithm hashAlgorithm, boolean isPepperEnabled, int attemptsUntilCAPTCHA, int accountLockThreshold,
+            int lockTimeMinutes, int totpTriesUntilSessionLock, long captchaLatencyMS, CsvLogger logger
 
     ) {
         if (attemptsUntilCAPTCHA < 0) {
@@ -76,11 +79,16 @@ public class Server {
         }
         this.captchaLatencyMS = captchaLatencyMS;
 
+        if (logger == null) {
+            throw new IllegalArgumentException("Logger cannot be null");
+        }
+
         this.accounts = new HashMap<>();
         this.pendingTOTPAccounts = new HashMap<>();
         this.pendingCaptchaAccounts = new HashMap<>();
         this.hashAlgorithm = hashAlgorithm;
         this.isPepperEnabled = isPepperEnabled;
+        this.logger = logger;
     }
 
     /**
@@ -141,6 +149,8 @@ public class Server {
         int attemptNumber = 0;
         Account account = null;
 
+        totalLoginAttempts += 1; // Increase total login attempts.
+
         try {
             if (username == null || password == null ||
                 username.isBlank() || password.isBlank()) {
@@ -152,6 +162,9 @@ public class Server {
             username = username.strip();
             password = password.strip();
 
+            // Get the account Object
+            account = accounts.get(username);
+
             // Add attempt to CAPTCHA session.
             AddAttemptToCaptchaList(username);
             if (attemptsUntilCAPTCHA > 0 &&
@@ -160,9 +173,6 @@ public class Server {
                 return state;
             }
 
-
-            // Get the account Object
-            account = accounts.get(username);
 
             // If account does not exist, return fad credentials flag.
             if (account == null) {
@@ -180,10 +190,10 @@ public class Server {
             attemptNumber = account.getBadLoginAttemptsCounter() + 1;
 
             // Apply pepper if used.
-            password = addPepperIfUsed(password);
+            String pepperedPassword = addPepperIfUsed(password);
 
             // Password is wrong, return failure.
-            if (!AuthService.authenticatePassword(account, password, hashAlgorithm)) {
+            if (!AuthService.authenticatePassword(account, pepperedPassword, hashAlgorithm)) {
                 state = LoginState.FAILURE_BAD_CREDENTIALS;
 
                 // Increase bad login attempts counter.
@@ -239,6 +249,8 @@ public class Server {
         int attemptNumber = 0;
         Account account = null;
 
+        totalLoginAttempts += 1; // Increase total login attempts.
+
         try {
             // If username is not pending verification, return failure.
             if (username == null || !pendingTOTPAccounts.containsKey(username.strip())) {
@@ -256,7 +268,7 @@ public class Server {
             attemptTOTP = attemptTOTP.strip();
             username = username.strip();
 
-            // Get the account.
+            // Get the totp session.
             account = accounts.get(username);
             TotpSession totpSession = pendingTOTPAccounts.get(username);
 
@@ -430,11 +442,11 @@ public class Server {
         // Create a logEntry on the attempt log in.
         LogEntry entry = new LogEntry(
                 timestamp, username, hashMode, guess, resultState.toString(), protectionFlags, userAttemptNumber,
-                LoggerManager.getLogs().size() + 1, latencyMS, String.valueOf(groupSeed)
+                totalLoginAttempts, latencyMS, String.valueOf(groupSeed)
         );
 
         // Add it to the log list.
-        LoggerManager.addLog(entry);
+        logger.log(entry);
     }
 
     /**

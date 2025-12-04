@@ -1,5 +1,6 @@
 package com.matoalot.authsim;
 
+import com.matoalot.authsim.Logger.CsvLogger;
 import com.matoalot.authsim.attacker.Attacker;
 import com.matoalot.authsim.model.SecurityConfig;
 import com.matoalot.authsim.server.Server;
@@ -47,7 +48,6 @@ public class ExperimentManager {
         // Run experiments.
         System.out.println("Running experiments...\n");
         for (SecurityConfig config: experiments) {
-
             // Set up server for this experiment.
             Server experimentServer = setupServer(config);
             addUsersToServer(experimentServer, config, random, allUsernames);
@@ -76,6 +76,9 @@ public class ExperimentManager {
 
     // Helper method to set up server based on configuration.
     private static Server setupServer(SecurityConfig config) {
+        // Create logger.
+        CsvLogger logger = new CsvLogger("experiment_" + config.experimentId + "_log.csv");
+
         return new Server(
                 config.hashAlgorithm,
                 config.isPepperEnabled,
@@ -83,7 +86,8 @@ public class ExperimentManager {
                 config.accountLockThreshold,
                 config.lockTimeMinutes,
                 config.totpTriesUntilSessionLock,
-                config.captchaLatencyMS
+                config.captchaLatencyMS,
+                logger
         );
     }
 
