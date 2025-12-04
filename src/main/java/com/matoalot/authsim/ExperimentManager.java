@@ -8,7 +8,6 @@ import com.matoalot.authsim.utils.PasswordGenerator;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -20,95 +19,116 @@ public class ExperimentManager {
     public static final int GROUP_SEED = 0;
 
 
-
     public static void main(String[] args) {
+        runExperiments();
+    }
+
+
+
+    private static void runExperiments() {
         Random random = new Random(GROUP_SEED); // Seeded random for reproducibility.
         List<String> allUsernames = new ArrayList<>();
 
         System.out.println("---Starting Experiment Manager---\n");
 
+
         System.out.println("Loading configurations...");
         // Load configurations from config.json
         List<SecurityConfig> experiments = ConfigLoader.loadConfigs("config.json");
-        if (experiments == null || experiments.isEmpty()) {
-            System.err.println("Error: No configurations loaded. Check config.json path or syntax.");
-            return;
-        }
+        System.out.println("Configurations loaded successfully.\n");
+
         // Print loaded configurations for debugging.
         System.out.println("Loaded " + experiments.size() + " configurations:\n");
         for (SecurityConfig config : experiments) {
             System.out.println(config);
         }
-
+        System.out.println();
 
         // Run experiments.
         System.out.println("Running experiments...\n");
         for (SecurityConfig config: experiments) {
+
+            // Set up server for this experiment.
+            Server experimentServer = setupServer(config);
+            addUsersToServer(experimentServer, config, random, allUsernames);
+
+
             System.out.println("Starting experiment #" + config.experimentId + ": " + config.description);
 
-            // Create server with specified configuration.
-            Server experimentServer = new Server(
-                    config.hashAlgorithm,
-                    config.isPepperEnabled,
-                    config.attemptsUntilCAPTCHA,
-                    config.accountLockThreshold,
-                    config.lockTimeMinutes,
-                    config.totpTriesUntilSessionLock,
-                    config.captchaLatencyMS
-            );
-
-            // Register accounts with different password strengths.
-            for(int i = 1; i <= ACCOUNTS_WITH_EASY_PASSWORD; i++) {
-                String username = "easyUser_" + i;
-                String password = PasswordGenerator.getEasyPassword(random);
-
-                // Register user.
-                experimentServer.register(username, password);
-                allUsernames.add(username);
-                if (config.isTOTPEnabled) {
-                    experimentServer.enableTOTPForUser(username, password);
-                }
-            }
-            for(int i = 1; i <= ACCOUNTS_WITH_MEDIUM_PASSWORD; i++) {
-                String username = "mediumUser_" + i;
-                String password = PasswordGenerator.getMediumPassword(random);
-
-                // Register user.
-                experimentServer.register(username, password);
-                allUsernames.add(username);
-                if (config.isTOTPEnabled) {
-                    experimentServer.enableTOTPForUser(username, password);
-                }
-            }
-            for(int i = 1; i <= ACCOUNTS_WITH_HARD_PASSWORD; i++) {
-                String username = "hardUser_" + i;
-                String password = PasswordGenerator.getHardPassword(random);
-
-                // Register user.
-                experimentServer.register(username, password);
-                allUsernames.add(username);
-                if (config.isTOTPEnabled) {
-                    experimentServer.enableTOTPForUser(username, password);
-                }
-            }
-            int maxAttempts = 5;
-            long timeLimitMs = 10_000; // 10 seconds
-
+            // Create attacker.
             Attacker attacker = new Attacker(
                     experimentServer,
                     allUsernames,
-                    maxAttempts,
-                    timeLimitMs
+                    config.timeLimitMinutes,
+                    config.maxAttempts
             );
 
-            System.out.println("Running Brute Force for this experiment...");
-            attacker.bruteForceAllUsers();
-
-            System.out.println("Running Password Spraying for this experiment...");
-            attacker.passwordSpraying();
+            // Start the attack simulation.
+            System.out.println("Launching attack for experiment #" + config.experimentId + "...");
+            attacker.launchAttack();
+            System.out.println("Attack finished for experiment #" + config.experimentId + ".");
 
             System.out.println("Finished experiment " + config.experimentId + "\n");
         }
 
-    } // End of main method.
-} // End of com.matoalot.authsim.ExperimentManager class.
+    }
+
+
+    // Helper method to set up server based on configuration.
+    private static Server setupServer(SecurityConfig config) {
+        return new Server(
+                config.hashAlgorithm,
+                config.isPepperEnabled,
+                config.attemptsUntilCAPTCHA,
+                config.accountLockThreshold,
+                config.lockTimeMinutes,
+                config.totpTriesUntilSessionLock,
+                config.captchaLatencyMS
+        );
+    }
+
+
+    // Helper method to add users to the server.
+    private static void addUsersToServer(Server server, SecurityConfig config, Random random, List<String> allUsernames) {
+        System.out.println("---Adding users to server for experiment #" + config.experimentId + "...");
+        // Register accounts with different password strengths.
+        for(int i = 1; i <= ACCOUNTS_WITH_EASY_PASSWORD; i++) {
+            String username = "easyUser_" + i;
+            String password = PasswordGenerator.getEasyPassword(random);
+
+            // Register user.
+            server.register(username, password);
+            allUsernames.add(username);
+            if (config.isTOTPEnabled) {
+                server.enableTOTPForUser(username, password);
+            }
+        }
+        for(int i = 1; i <= ACCOUNTS_WITH_MEDIUM_PASSWORD; i++) {
+            String username = "mediumUser_" + i;
+            String password = PasswordGenerator.getMediumPassword(random);
+
+            // Register user.
+            server.register(username, password);
+            allUsernames.add(username);
+            if (config.isTOTPEnabled) {
+                server.enableTOTPForUser(username, password);
+            }
+        }
+        for(int i = 1; i <= ACCOUNTS_WITH_HARD_PASSWORD; i++) {
+            String username = "hardUser_" + i;
+            String password = PasswordGenerator.getHardPassword(random);
+
+            // Register user.
+            server.register(username, password);
+            allUsernames.add(username);
+            if (config.isTOTPEnabled) {
+                server.enableTOTPForUser(username, password);
+            }
+        }
+
+        System.out.println("Added " + (ACCOUNTS_WITH_EASY_PASSWORD + ACCOUNTS_WITH_MEDIUM_PASSWORD + ACCOUNTS_WITH_HARD_PASSWORD) + " users to server.\n");
+    }
+
+
+
+}

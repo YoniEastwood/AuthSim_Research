@@ -1,90 +1,258 @@
 package com.matoalot.authsim.attacker;
 
-import com.matoalot.authsim.server.Server;
 import com.matoalot.authsim.model.LoginState;
+import com.matoalot.authsim.server.Server;
 import com.matoalot.authsim.utils.PasswordGenerator;
-import com.matoalot.authsim.model.HashAlgorithm;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
+import java.util.PriorityQueue;
+import java.util.concurrent.TimeUnit;
+
 
 public class Attacker {
-        private final Server server;
-        private final List<String> usernames;
-        private final int maxAttempts;
-        private final long maxRunTimeMillis;
+    public static final int PAUSE_ATTACK_ON_LOCK_MINUTES = 1; // Pause time on all accounts lock.
 
-        public Attacker(Server server, List<String> usernames, int maxAttempts, long maxRunTimeMillis) {
-            this.server = server;
-            this.usernames = usernames;
-            this.maxAttempts = maxAttempts;
-            this.maxRunTimeMillis = maxRunTimeMillis;
+    private final Server server; // Server to attack.
+    private final List<String> targetUsernames; // List of target usernames.
+    private final long maxRunTimeMS; // Maximum runtime in milliseconds.
+    private final int maxAttempts; // Maximum attempts for the attack.
+    private int globalAttempts = 0; // Global attempts counter.
+    private long startTime; // Attack start time.
+
+
+
+    public Attacker(Server server, List<String> targetUsernames, int maxRunTimeMinuets, int maxAttempts) {
+        // Basic validations.
+        if (maxAttempts <= 0) {
+            throw new IllegalArgumentException("maxAttempts must be greater than 0");
         }
-        public void bruteForceAllUsers() {
-        long start = System.currentTimeMillis();
+        if (maxRunTimeMinuets <= 0) {
+            throw new IllegalArgumentException("maxRunTimeMS must be greater than 0");
+        }
+        if (targetUsernames == null || targetUsernames.isEmpty()) {
+            throw new IllegalArgumentException("TargetUsernames must not be null or empty");
+        }
+        if (server == null) {
+            throw new IllegalArgumentException("Server is null");
+        }
 
-        for (String username : usernames) {
+        this.server = server;
+        this.maxRunTimeMS = TimeUnit.MINUTES.toNanos(maxRunTimeMinuets);// Convert minuets to milliseconds.
+        this.maxAttempts = maxAttempts;
+        this.globalAttempts = 0;
+        this.targetUsernames = targetUsernames;
+    }
 
-            int attempts = 0;
 
-            System.out.println("=== Brute Force on " + username + " ===");
 
-            for (String guess : PasswordGenerator.COMMON_PASSWORDS_LIST) {
+    public void launchAttack() {
+        this.startTime = System.currentTimeMillis(); // Record start time.
 
-                // אם עבר הזמן שהוגדר — מפסיקים
-                if (System.currentTimeMillis() - start > maxRunTimeMillis) {
-                    System.out.println("⏳ Time limit reached! stopping...");
-                    return;
+        System.out.println("---Attacker started---");
+
+        // Run the spraying attack first and save the survived usernames for bruteforce attack.
+        List<String> breachedAccounts;
+        breachedAccounts = launchSprayingAttack(targetUsernames);
+
+        // Create a Priority Queue for accounts that survived spraying attack.
+        // The queue is ordered by account lock time.
+        PriorityQueue<AccountUnderAttack> queue = new PriorityQueue<>();
+        for (String username : targetUsernames) {
+            // if username was not breached in spraying attack, add to queue for bruteforce attack.
+            if (!breachedAccounts.contains(username)) {
+                queue.add(new AccountUnderAttack(username));
+            }
+        }
+
+
+
+        // Launch the bruteforce attack on the remaining accounts.
+        System.out.println("\n---Starting Bruteforce Attack on remaining accounts---\n");
+        launchBruteforceAttack(queue);
+        
+        System.out.println("\n---Attacker finished---" );
+    }
+
+
+    /**
+     * Launch a bruteforce attack on accounts in the priority queue.
+     * Prioritizes accounts based on their lock time.
+     * @param queue Priority queue of accounts to attack.
+     */
+    private void launchBruteforceAttack(PriorityQueue<AccountUnderAttack> queue) {
+
+        // Pull an account from the queue.
+        AccountUnderAttack account = queue.poll();
+        if (account == null) { // No more accounts to attack.
+            System.out.println("No more accounts to attack. Ending bruteforce attack.");
+            return;
+        }
+
+        // While we have not exceeded time or attempts limits.
+        while (!(isTimeExceeded() || isMaxAttemptsExceeded()) && account != null) {
+            // Attempt to log in with the next password.
+            String password = account.nextPassword();
+            if (password == null) { // No more passwords to try for this account.
+                System.out.println("Exhausted all passwords for username: " + account.getUsername() + ". Ending attack on this account.");
+                continue; // Move to the next account. (don't re-add to queue)
+            }
+
+            LoginState loginState = server.login(account.getUsername(), password);
+            globalAttempts++; // Increment global attempts.
+
+            if (loginState == LoginState.FAILURE_REQUIRE_CAPTCHA) {
+                System.out.println("CAPTCHA required for username: " + account.getUsername() + ". Verifying CAPTCHA...");
+                // Simulate CAPTCHA test.
+                server.verifyCAPTCHA(account.getUsername(), server.generateCPATCHA(account.getUsername()));
+                System.out.println("CAPTCHA verified for username: " + account.getUsername() + ". Retrying login...");
+                // Retry login after CAPTCHA.
+                loginState = server.login(account.getUsername(), password);
+                globalAttempts++;
+            }
+
+            switch (loginState) {
+                case SUCCESS -> { // Account breached.
+                    System.out.println("Breached account: " + account.getUsername() + " with password: " + password);
+                    // Get next account from queue.
+                    account = queue.poll();
                 }
-
-                // אם עברנו את מספר הניסיונות — מפסיקים
-                if (attempts >= maxAttempts) {
-                    System.out.println("⚠ Max attempts reached for " + username);
-                    break;
+                case FAILURE_BAD_CREDENTIALS ->  {
+                    // Continue trying next password.
+                    continue;
                 }
-
-                attempts++;
-
-                LoginState state = server.login(username, guess);
-                System.out.println("Trying: " + guess + " → " + state);
-
-                if (state == LoginState.SUCCESS) {
-                    System.out.println("FOUND PASSWORD: " + guess);
-                    break;
+                case FAILURE_ACCOUNT_LOCKED -> {
+                    long lockUntil = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(PAUSE_ATTACK_ON_LOCK_MINUTES);
+                    account.setLockedUntil(lockUntil);
+                    System.out.println("Account locked: " + account.getUsername() + ". Will retry after lock period.");
+                    // Re-add account to queue for further attempts after lock period.
+                    queue.add(account);
+                    // Get next account from queue.
+                    account = queue.poll();
                 }
+                case FAILURE_REQUIRE_CAPTCHA -> {
+                    System.err.println("Error: CAPTCHA requirement should have been handled already for username: " + account.getUsername());
+                }
+                case FAILURE_TOTP_REQUIRED -> {
+                    System.out.println("Found password for TOTP protected account: " + account.getUsername() + " with password: " + password);
+                    System.out.println("Due to TOTP protection strength, cannot breach this account in a reasonable amount of time.");
+                    // Get next account from queue.
+                    account = queue.poll();
+                }
+                default -> {
+                    // Not expected. Log for further analysis.
+                    System.err.println("Error: Unexpected login state for username: " + account.getUsername() + " with password: " + password + ". State: " + loginState);
+                    // Re-add account to queue for further attempts.
+                    queue.add(account);
+                }
+            } // End of switch case
 
-                if (state == LoginState.FAILURE_ACCOUNT_LOCKED) {
-                    System.out.println("ACCOUNT LOCKED!");
-                    break;
+            if (account.isLocked()) {
+                System.out.println("All accounts are currently locked. Sleeping for lock period...");
+                try {
+                    TimeUnit.MINUTES.sleep(PAUSE_ATTACK_ON_LOCK_MINUTES);
+
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Sleep interrupted: " + e.getMessage());
                 }
             }
+        }
+
+        // Log the reason for ending the attack.
+        if (account == null) {
+            System.out.println("No more accounts to attack. Ending bruteforce attack.");
+        } else {
+            System.out.println("Attack time or attempts limit reached. Ending bruteforce attack.");
         }
     }
-    public void passwordSpraying() {
 
-        long start = System.currentTimeMillis();
 
-        System.out.println("=== Password Spraying ===");
+    /**
+     * Launch a password spraying attack.
+     * @param targetUsernames List of target usernames.
+     * @return List of usernames that their account was breached.
+     */
+    private List<String> launchSprayingAttack(List<String> targetUsernames) {
+        targetUsernames = new ArrayList<>(targetUsernames); // Copy to avoid modifying the original list.
+        List<String> breachedAccountsPassword = new ArrayList<>(); // List of usernames where their password was found.
 
-        for (String guess : PasswordGenerator.COMMON_PASSWORDS_LIST) {
+        // For each common password, attempt to log in for each username.
+        for (String commonPassword : PasswordGenerator.COMMON_PASSWORDS_LIST) {
 
-            if (System.currentTimeMillis() - start > maxRunTimeMillis) {
-                System.out.println("⏳ Time limit reached! stopping spraying...");
-                return;
-            }
+            // Create an iterator for the target usernames.
+            Iterator<String> targetUsernamesIterator = targetUsernames.iterator();
 
-            System.out.println("\nTrying password: " + guess);
+            // Iterate over usernames.
+            while (targetUsernamesIterator.hasNext()) {
+                String username = targetUsernamesIterator.next(); // Get current username.
 
-            for (String username : usernames) {
-
-                LoginState state = server.login(username, guess);
-
-                if (state == LoginState.SUCCESS) {
-                    System.out.println("SUCCESS!! " + username + " uses password: " + guess);
+                // If max attempts or time exceeded, return the survived usernames.
+                if (isTimeExceeded() || isMaxAttemptsExceeded()) {
+                    System.out.println("Attack time or attempts limit reached. Ending spraying attack.");
+                    return targetUsernames;
                 }
-            }
-        }
+
+                // Attempt login.
+                LoginState loginState = server.login(username, commonPassword);
+                globalAttempts++; // Increment global attempts.
+
+                // Need to verify CAPTCHA for this attempt.
+                if (loginState == LoginState.FAILURE_REQUIRE_CAPTCHA) {
+                    System.out.println("CAPTCHA required for username: " + username + ". Verifying CAPTCHA...");
+                    // Simulate CAPTCHA test.
+                    server.verifyCAPTCHA(username, server.generateCPATCHA(username));
+                    System.out.println("CAPTCHA verified for username: " + username + ". Retrying login...");
+                    // Retry login after CAPTCHA.
+                    loginState = server.login(username, commonPassword);
+                    globalAttempts++;
+                }
+
+                switch (loginState) {
+                    case SUCCESS -> { // Account breached.
+                        System.out.println("Breached account: " + username + " with password: " + commonPassword);
+                        targetUsernamesIterator.remove(); // Remove breached account from target list.
+                        breachedAccountsPassword.add(username); // Add to breached accounts list.
+                    }
+                    case FAILURE_BAD_CREDENTIALS ->  {
+                        // Do nothing, just a failed attempt.
+                    }
+                    case FAILURE_ACCOUNT_LOCKED -> {
+                        System.out.println("Account locked: " + username + ". Skipping further password spraying on this account.");
+                        targetUsernamesIterator.remove(); // Remove locked account from target list.
+                    }
+                    case FAILURE_TOTP_REQUIRED -> {
+                        System.out.println("Found password for TOTP protected account: " + username + " with password: " + commonPassword);
+                        System.out.println("Due to TOTP protection strength, cannot breach this account in a reasonable amount of time.");
+                        targetUsernamesIterator.remove(); // Remove TOTP protected account from target list.
+                        breachedAccountsPassword.add(username); // Add to breached accounts list.
+                    }
+                    default -> {
+                        // Not expected. Log for further analysis.
+                        System.err.println("Error: Unexpected login state for username: " + username + " with password: " + commonPassword + ". State: " + loginState);
+                    }
+                } // End of switch case
+
+            } // End of usernames loop
+        } // End of common passwords loop
+
+        // Return the list of breached accounts.
+        return breachedAccountsPassword;
     }
+
+
+
+
+    // Helper methods to check time and attempts limits.
+    private boolean isTimeExceeded() {
+        return (System.currentTimeMillis() - startTime) >= maxRunTimeMS;
+    }
+    // Helper methods to check attempts limits.
+    private boolean isMaxAttemptsExceeded() {
+        return globalAttempts >= maxAttempts;
+    }
+
 
 }
-

@@ -15,9 +15,6 @@ public class LoggerManager {
      */
     public static void addLog(LogEntry log) {
         attemptLogs.add(log);
-
-        // Debug print.
-        System.out.println("[LOG ADDED] " + log.toString());
     }
 
     /**

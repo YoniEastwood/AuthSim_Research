@@ -61,7 +61,7 @@ public class PasswordGenerator {
     // Return a medium complexity password.
     public static String getMediumPassword(Random random) {
         Objects.requireNonNull(random, "Random generator cannot be null");
-        // Password of length 6.
+        // Password of length 4.
         String chars = "abcdefghijklmnopqrstuvwxyz";
         StringBuilder password = new StringBuilder();
         for (int i = 0; i < 6; i++) {
@@ -75,8 +75,8 @@ public class PasswordGenerator {
     public static String getHardPassword(Random random) {
         Objects.requireNonNull(random, "Random generator cannot be null");
 
-        // Password of length 8.
-        String chars = "abcdefghijklmnopqrstuvwxyz0123456789!";
+        // Password of length 6.
+        String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder password = new StringBuilder();
         for (int i = 0; i < 8; i++) {
             password.append(chars.charAt(random.nextInt(chars.length())));
