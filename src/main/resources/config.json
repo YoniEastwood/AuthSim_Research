@@ -6,10 +6,12 @@
     "isPepperEnabled": "true",
     "isTOTPEnabled": "false",
     "attemptsUntilCAPTCHA": "5",
-    "accountLockoutThreshold": "10",
+    "accountLockThreshold": "10",
     "lockTimeMinutes": "3",
     "totpTriesUntilSessionLock": "3",
-    "captchaLatencyMS": "50"
+    "captchaLatencyMS": "50",
+    "timeLimitMinutes": "120",
+    "maxAttempts": "1000000"
   },
   {
     "experimentId": "2",
@@ -21,7 +23,9 @@
     "accountLockoutThreshold": "10",
     "lockTimeMinutes": "3",
     "totpTriesUntilSessionLock": "3",
-    "captchaLatencyMS": "50"
+    "captchaLatencyMS": "50",
+    "timeLimitMinutes": "120",
+    "maxAttempts": "1000000"
   }
 
 ]

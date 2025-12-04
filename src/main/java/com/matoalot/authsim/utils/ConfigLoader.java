@@ -1,9 +1,11 @@
 package com.matoalot.authsim.utils;
 
+import com.google.gson.JsonSyntaxException;
 import com.matoalot.authsim.model.SecurityConfig;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.InputStream;
@@ -38,10 +40,19 @@ public class ConfigLoader {
             Type listType = new TypeToken<List<SecurityConfig>>(){}.getType();
 
             // Convert JSON to Java Objects
-            return gson.fromJson(reader, listType);
+            List<SecurityConfig> configs = gson.fromJson(reader, listType);
 
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load configurations from file: " + fileName, e);
+            // If no configurations found, throw an exception.
+            if (configs == null) {
+                throw new ConfigurationLoadingException("No configurations found in file: " + fileName);
+            }
+
+            return configs;
+
+        } catch (JsonSyntaxException e) { // Bad JSON syntax
+            throw new ConfigurationLoadingException("Invalid JSON syntax in config file: " + fileName, e);
+        } catch (IOException e) { // IO error
+            throw new ConfigurationLoadingException("Error reading config file: " + fileName, e);
         }
     }
 }
