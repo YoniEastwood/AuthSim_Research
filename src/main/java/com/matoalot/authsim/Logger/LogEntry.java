@@ -15,6 +15,8 @@ public class LogEntry {
     public int userAttemptNumber; // Number of attempts for this user.
     public int globalAttemptNumber; // Total number of attempts across all users.
     public double latencyMS; // Latency in milliseconds until response.
+    public long MemoryUsageMB; // Memory usage in MB at the time of the attempt.
+    public int CPULoadPercentage; // CPU load percentage at the time of the attempt.
 
     /**
      * Constructor for LogEntry
@@ -29,7 +31,11 @@ public class LogEntry {
      * @param latencyMS // Latency in milliseconds until response.
      * @param groupSeed // The seed of the group this project belongs to.
      */
-    public LogEntry(String timestamp, String username, String hashType, String guess, String result, String protectionFlags, int userAttemptNumber,int globalAttemptNumber, int latencyMS, String groupSeed) {
+    public LogEntry(
+            String timestamp, String username, String hashType,
+            String guess, String result, String protectionFlags,
+            int userAttemptNumber,int globalAttemptNumber, int latencyMS,
+            String groupSeed, long MemoryUsageMB, int CPULoadPercentage) {
         this.timestamp = timestamp;
         this.username = username;
         this.hashType = hashType;
@@ -40,6 +46,8 @@ public class LogEntry {
         this.globalAttemptNumber = globalAttemptNumber;
         this.latencyMS = latencyMS;
         this.groupSeed = groupSeed;
+        this.MemoryUsageMB = MemoryUsageMB;
+        this.CPULoadPercentage = CPULoadPercentage;
     }
 
     @Override

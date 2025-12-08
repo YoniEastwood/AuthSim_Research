@@ -11,6 +11,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
 import com.matoalot.authsim.model.RegisterState;
+import com.matoalot.authsim.utils.ResourceMonitor;
 import com.matoalot.authsim.utils.TOTPUtil;
 
 /**
@@ -437,7 +438,8 @@ public class Server {
         // Create a logEntry on the attempt log in.
         LogEntry entry = new LogEntry(
                 timestamp, username, hashMode, guess, resultState.toString(), protectionFlags, userAttemptNumber,
-                totalLoginAttempts, latencyMS, String.valueOf(groupSeed)
+                totalLoginAttempts, latencyMS, String.valueOf(groupSeed),
+                ResourceMonitor.getUsedMemoryMB(), ResourceMonitor.getCPULoadPercentage()
         );
 
         // Add it to the log list.

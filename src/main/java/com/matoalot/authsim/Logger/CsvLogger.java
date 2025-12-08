@@ -13,7 +13,8 @@ public class CsvLogger {
     private static final String[] HEADERS = {
             "GROUP_SEED", "timestamp", "username", "hashMode",
             "guess", "result", "protectionFlags",
-            "userAttemptNumber", "globalAttemptNumber", "latencyMS"
+            "userAttemptNumber", "globalAttemptNumber", "latencyMS",
+            "MemoryUsageMB", "CPULoadPercentage"
     };
 
     /**
@@ -65,7 +66,9 @@ public class CsvLogger {
                     log.protectionFlags,
                     log.userAttemptNumber,
                     log.globalAttemptNumber,
-                    log.latencyMS
+                    log.latencyMS,
+                    log.MemoryUsageMB,
+                    log.CPULoadPercentage
             );
 
         } catch (IOException e) {
