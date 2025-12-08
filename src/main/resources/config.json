@@ -5,12 +5,12 @@
     "hashAlgorithm": "SHA-256",
     "isPepperEnabled": "false",
     "isTOTPEnabled": "false",
-    "attemptsUntilCAPTCHA": "1000000",
-    "accountLockThreshold": "1000000",
+    "attemptsUntilCAPTCHA": "0",
+    "accountLockThreshold": "0",
     "lockTimeMinutes": "0",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "30",
-    "maxAttempts": "1000000"
+    "maxAttempts": "100000"
   },
   {
     "experimentId": "2",
@@ -18,12 +18,12 @@
     "hashAlgorithm": "BCRYPT",
     "isPepperEnabled": "false",
     "isTOTPEnabled": "false",
-    "attemptsUntilCAPTCHA": "1000000",
-    "accountLockThreshold": "1000000",
+    "attemptsUntilCAPTCHA": "0",
+    "accountLockThreshold": "0",
     "lockTimeMinutes": "0",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "60",
-    "maxAttempts": "1000000"
+    "maxAttempts": "100000"
   },
   {
     "experimentId": "3",
@@ -31,12 +31,12 @@
     "hashAlgorithm": "ARGON2ID",
     "isPepperEnabled": "false",
     "isTOTPEnabled": "false",
-    "attemptsUntilCAPTCHA": "1000000",
-    "accountLockThreshold": "1000000",
+    "attemptsUntilCAPTCHA": "0",
+    "accountLockThreshold": "0",
     "lockTimeMinutes": "0",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "60",
-    "maxAttempts": "1000000"
+    "maxAttempts": "100000"
   },
   {
     "experimentId": "4",
@@ -44,12 +44,12 @@
     "hashAlgorithm": "SHA-256",
     "isPepperEnabled": "false",
     "isTOTPEnabled": "false",
-    "attemptsUntilCAPTCHA": "1000000",
+    "attemptsUntilCAPTCHA": "0",
     "accountLockThreshold": "3",
     "lockTimeMinutes": "5",
     "captchaLatencyMS": "0",
     "timeLimitMinutes": "60",
-    "maxAttempts": "1000000"
+    "maxAttempts": "500000"
   },
   {
     "experimentId": "5",
@@ -58,11 +58,11 @@
     "isPepperEnabled": "true",
     "isTOTPEnabled": "false",
     "attemptsUntilCAPTCHA": "3",
-    "accountLockThreshold": "1000000",
+    "accountLockThreshold": "0",
     "lockTimeMinutes": "0",
     "captchaLatencyMS": "2000",
     "timeLimitMinutes": "60",
-    "maxAttempts": "1000000"
+    "maxAttempts": "500000"
   },
   {
     "experimentId": "6",

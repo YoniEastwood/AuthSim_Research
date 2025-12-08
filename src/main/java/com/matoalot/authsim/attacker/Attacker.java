@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 
 public class Attacker {
     public static final int PAUSE_ATTACK_ON_LOCK_MINUTES = 1; // Pause time on all accounts lock.
-    private static final int PROGRESS_BAR_UPDATE_INTERVAL = 500; // Intervals for updating the progress bar.
 
     private final Server server; // Server to attack.
     private final List<String> targetUsernames; // List of target usernames.
