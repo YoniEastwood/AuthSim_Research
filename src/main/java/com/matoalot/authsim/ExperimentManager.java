@@ -27,7 +27,6 @@ public class ExperimentManager {
 
 
     private static void runExperiments() {
-        Random random = new Random(GROUP_SEED); // Seeded random for reproducibility.
         List<String> allUsernames = new ArrayList<>();
 
         System.out.println("---Starting Experiment Manager---\n");
@@ -48,8 +47,10 @@ public class ExperimentManager {
         // Run experiments.
         System.out.println("Running experiments...\n");
         for (SecurityConfig config: experiments) {
+            Random random = new Random(GROUP_SEED); // Seeded random for reproducibility.
             // Set up server for this experiment.
             Server experimentServer = setupServer(config);
+            allUsernames.clear(); // Clear usernames from previous experiment.
             addUsersToServer(experimentServer, config, random, allUsernames);
 
 
@@ -131,7 +132,5 @@ public class ExperimentManager {
 
         System.out.println("Added " + (ACCOUNTS_WITH_EASY_PASSWORD + ACCOUNTS_WITH_MEDIUM_PASSWORD + ACCOUNTS_WITH_HARD_PASSWORD) + " users to server.\n");
     }
-
-
 
 }
