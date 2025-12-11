@@ -41,7 +41,7 @@ public class Attacker {
         }
 
         this.server = server;
-        this.maxRunTimeMS = TimeUnit.MINUTES.toNanos(maxRunTimeMinuets);// Convert minuets to milliseconds.
+        this.maxRunTimeMS = TimeUnit.MINUTES.toMillis(maxRunTimeMinuets);// Convert minuets to milliseconds.
         this.maxAttempts = maxAttempts;
         this.globalAttempts = 0;
         this.targetUsernames = targetUsernames;
@@ -329,8 +329,17 @@ public class Attacker {
         }
         bar.append("]");
 
+        // Calculate elapsed time.
+        long elapsedTimeMS = System.currentTimeMillis() - startTime;
+        int elapsedTimeMinutes = (int) (elapsedTimeMS / (1000.0 * 60.0));
+        int TotalMinutes = (int) (maxRunTimeMS / (1000 * 60));
+        double timePercent = (double) elapsedTimeMS / maxRunTimeMS;
+
         // Print the progress bar.
-        System.out.print("\r" + bar.toString() + String.format(" %.2f%% (%d/%d)", percent * 100, current, total));
+        System.out.print("\r" + bar.toString() + String.format(" %.2f%% (%d/%d) | Time: %.2f%% (%d/%d minutes)",
+                percent * 100, current, total, timePercent * 100, elapsedTimeMinutes, TotalMinutes));
+
+        System.out.flush();
     }
 
 
