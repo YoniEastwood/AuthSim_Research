@@ -183,6 +183,10 @@ public class Attacker {
                 attemptsOnCurrentAccount = 0; // Reset attempts counter for new account.
             }
 
+            if (account == null) {
+                break; // No more accounts to attack.
+            }
+
             if (account.isLocked()) {
                 System.out.println("\rAll accounts are currently locked. Sleeping for " + PAUSE_ATTACK_ON_LOCK_MINUTES + " minutes...");
                 printProgressBar(globalAttempts, maxAttempts);
