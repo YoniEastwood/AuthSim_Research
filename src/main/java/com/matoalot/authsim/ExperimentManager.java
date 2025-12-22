@@ -2,9 +2,11 @@ package com.matoalot.authsim;
 
 import com.matoalot.authsim.Logger.CsvLogger;
 import com.matoalot.authsim.attacker.Attacker;
+import com.matoalot.authsim.model.RegisterState;
 import com.matoalot.authsim.model.SecurityConfig;
 import com.matoalot.authsim.server.Server;
 import com.matoalot.authsim.utils.ConfigLoader;
+import com.matoalot.authsim.utils.GetAdditionalUsers;
 import com.matoalot.authsim.utils.PasswordGenerator;
 
 
@@ -130,7 +132,25 @@ public class ExperimentManager {
             }
         }
 
-        System.out.println("Added " + (ACCOUNTS_WITH_EASY_PASSWORD + ACCOUNTS_WITH_MEDIUM_PASSWORD + ACCOUNTS_WITH_HARD_PASSWORD) + " users to server.\n");
+        // Add additional users from file.
+        var additionalUsers = new GetAdditionalUsers().getAdditionalUsers();
+        int additionalUserAdded = 0; // Counter for added additional users.
+        for (var user: additionalUsers) {
+            var state = server.register(user.getUsername(), user.getPassword());
+            if (state != RegisterState.SUCCESS) {
+                System.err.println("Warning: Could not add additional user '" + user.getUsername() + "' with password '" + user.getPassword() + "'. Registration state: " + state);
+                continue;
+            }
+
+            // User added successfully.
+            additionalUserAdded++;
+            allUsernames.add(user.getUsername());
+            if (config.isTOTPEnabled) {
+                server.enableTOTPForUser(user.getUsername(), user.getPassword());
+            }
+        }
+
+        System.out.println("Added " + (ACCOUNTS_WITH_EASY_PASSWORD + ACCOUNTS_WITH_MEDIUM_PASSWORD + ACCOUNTS_WITH_HARD_PASSWORD + additionalUserAdded) + " users to server.\n");
     }
 
 }
