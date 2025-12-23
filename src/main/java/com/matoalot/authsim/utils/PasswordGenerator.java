@@ -75,10 +75,10 @@ public class PasswordGenerator {
     public static String getHardPassword(Random random) {
         Objects.requireNonNull(random, "Random generator cannot be null");
 
-        // Password of length 6.
+        // Password of length 4.
         String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder password = new StringBuilder();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 4; i++) {
             password.append(chars.charAt(random.nextInt(chars.length())));
         }
 
