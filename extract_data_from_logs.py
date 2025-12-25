@@ -64,7 +64,7 @@ def analyze_logs():
                 'Successful': successful_attempts,
                 'Success Rate (%)': round(success_rate, 2),
                 'Rate (req/sec)': round(rate_aps, 2),
-                'Latency Mean': round(latency_mean, 2),
+                'Latency Mean': round(latency_mean, 4),
                 'Latency Median': round(latency_median, 2),
                 'Latency 90%': round(latency_90, 2),
                 'Latency 95%': round(latency_95, 2),
